@@ -1,9 +1,6 @@
+const server = require("./modules/user/user.controller");
 const express = require("express");
 const app = express();
-const port = 3000;
 
-app.get("/api/v1/info", function (req, res) {
-    res.send("Hello from NodeJS");
-});
-
-app.listen(port);
+app.listen(3000);
+app.use("/v1/user", server);
