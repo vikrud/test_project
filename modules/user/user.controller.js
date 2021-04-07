@@ -1,37 +1,39 @@
 const express = require("express");
 var router = express.Router(); // - /v1/user/
+const fsPromises = require("fs").promises;
 
 const filePath = "./database/users.json";
 const jsonParser = express.json();
 const fs = require("fs");
 
-//получение всех пользователей
-router.get("/", function (req, res) {
-    fs.readFile(filePath, function (err, content) {
-        if (err) {
-            res.statusCode = 500;
-            res.end("Server error");
-            return;
-        }
+function isEmpty(obj) {
+    for (let key in obj) {
+        return false;
+    }
+    return true;
+}
 
-        const users = JSON.parse(content);
+//получение всех пользователей
+router.get("/", async function (req, res) {
+    try {
+        let data = await fsPromises.readFile(filePath);
+        const users = await JSON.parse(data);
         res.send(users);
-    });
+    } catch (err) {
+        res.statusCode = 500;
+        res.end("Server error");
+    }
 });
 
 //получение конкретного пользователя
-router.get("/:id", function (req, res) {
-    const id = req.params.id;
-    let userById;
+router.get("/:id", async function (req, res) {
+    try {
+        const id = req.params.id;
+        let userById;
 
-    fs.readFile(filePath, function (err, content) {
-        if (err) {
-            res.statusCode = 500;
-            res.end("Server error");
-            return;
-        }
+        let data = await fsPromises.readFile(filePath);
+        const users = await JSON.parse(data);
 
-        const users = JSON.parse(content);
         for (let user of users) {
             if (user.id == id) {
                 userById = user;
@@ -42,33 +44,35 @@ router.get("/:id", function (req, res) {
         if (userById) {
             res.send(userById);
         } else {
+            throw new Error(404);
+        }
+    } catch (err) {
+        if (err.message == 404) {
             res.statusCode = 404;
             res.end("User not found");
+        } else {
+            res.statusCode = 500;
+            res.end("Server error");
         }
-    });
+    }
 });
 
 //создание пользователя
-router.post("/", jsonParser, function (req, res) {
-    if (!req.body) {
-        res.statusCode = 400;
-        res.end("Bad Request");
-    }
-
-    const userName = req.body.name;
-    const userSurname = req.body.surname;
-    const userEmail = req.body.email;
-    const userPhone = req.body.phone;
-    let userNewId;
-
-    fs.readFile(filePath, function (err, content) {
-        if (err) {
-            res.statusCode = 500;
-            res.end("Server error");
-            return;
+router.post("/", jsonParser, async function (req, res) {
+    try {
+        if (isEmpty(req.body)) {
+            throw new Error(400);
         }
 
-        let users = JSON.parse(content);
+        const userName = req.body.name;
+        const userSurname = req.body.surname;
+        const userEmail = req.body.email;
+        const userPhone = req.body.phone;
+        let userNewId;
+
+        let data = await fsPromises.readFile(filePath);
+        const users = await JSON.parse(data);
+
         let maxId = Math.max(...users.map((user) => user.id));
         userNewId = maxId + 1;
 
@@ -81,43 +85,38 @@ router.post("/", jsonParser, function (req, res) {
         };
 
         users.push(newUser);
-        data = JSON.stringify(users, null, "\t");
+        let newData = await JSON.stringify(users, null, "\t");
+        await fsPromises.writeFile(filePath, newData);
 
-        fs.writeFile("./database/users.json", data, function (err, content) {
-            if (err) {
-                res.statusCode = 500;
-                res.end("Server error");
-                return;
-            }
-
-            res.send(newUser);
-        });
-    });
+        res.send(newUser);
+    } catch (err) {
+        if (err.message == 400) {
+            res.statusCode = 400;
+            res.end("Bad Request");
+        } else {
+            res.statusCode = 500;
+            res.end("Server error");
+        }
+    }
 });
 
 //обновление пользователя
-router.put("/:id", jsonParser, function (req, res) {
-    const id = req.params.id;
-    let userIndex;
-
-    if (!req.body) {
-        res.statusCode = 400;
-        res.end("Bad Request");
-    }
-
-    const userName = req.body.name;
-    const userSurname = req.body.surname;
-    const userEmail = req.body.email;
-    const userPhone = req.body.phone;
-
-    fs.readFile(filePath, function (err, content) {
-        if (err) {
-            res.statusCode = 500;
-            res.end("Server error");
-            return;
+router.put("/:id", jsonParser, async function (req, res) {
+    try {
+        if (isEmpty(req.body)) {
+            throw new Error(400);
         }
 
-        let users = JSON.parse(content);
+        let userIndex;
+
+        const id = req.params.id;
+        const userName = req.body.name;
+        const userSurname = req.body.surname;
+        const userEmail = req.body.email;
+        const userPhone = req.body.phone;
+
+        let data = await fsPromises.readFile(filePath);
+        let users = await JSON.parse(data);
 
         for (i = 0; i < users.length; i++) {
             if (users[i].id == id) {
@@ -134,42 +133,42 @@ router.put("/:id", jsonParser, function (req, res) {
                 email: userEmail,
                 phone: userPhone,
             };
-
-            data = JSON.stringify(users, null, "\t");
-
-            fs.writeFile(
-                "./database/users.json",
-                data,
-                function (err, content) {
-                    if (err) {
-                        res.statusCode = 500;
-                        res.end("Server error");
-                        return;
-                    }
-
-                    res.send(users[userNumInArr]);
-                }
-            );
         } else {
-            res.statusCode = 404;
-            res.end("User not found");
+            throw new Error(404);
         }
-    });
+
+        let newData = await JSON.stringify(users, null, "\t");
+        await fsPromises.writeFile(filePath, newData);
+        res.send(users[userIndex]);
+    } catch (err) {
+        switch (err.message) {
+            case "400":
+                res.statusCode = 400;
+                res.end("Bad Request");
+                break;
+            case "404":
+                res.statusCode = 404;
+                res.end("User not found");
+                break;
+            default:
+                res.statusCode = 500;
+                res.end("Server error");
+        }
+    }
 });
 
 //удаление пользователя
-router.delete("/:id", function (req, res) {
-    const id = req.params.id;
-    let userIndex = -1;
+router.delete(["/", "/:id"], async function (req, res) {
+    try {
+        const id = req.params.id;
+        let userIndex = -1;
 
-    fs.readFile(filePath, function (err, content) {
-        if (err) {
-            res.statusCode = 500;
-            res.end("Server error");
-            return;
+        if (!id) {
+            throw new Error(400);
         }
 
-        let users = JSON.parse(content);
+        let data = await fsPromises.readFile(filePath);
+        let users = await JSON.parse(data);
 
         for (i = 0; i < users.length; i++) {
             if (users[i].id == id) {
@@ -177,29 +176,30 @@ router.delete("/:id", function (req, res) {
                 break;
             }
         }
+
         if (userIndex > -1) {
             const user = users.splice(userIndex, 1);
-
-            data = JSON.stringify(users, null, "\t");
-
-            fs.writeFile(
-                "./database/users.json",
-                data,
-                function (err, content) {
-                    if (err) {
-                        res.statusCode = 500;
-                        res.end("Server error");
-                        return;
-                    }
-
-                    res.send(user);
-                }
-            );
+            let newData = JSON.stringify(users, null, "\t");
+            await fsPromises.writeFile(filePath, newData);
+            res.send(user);
         } else {
-            res.statusCode = 404;
-            res.end("User not found");
+            throw new Error(404);
         }
-    });
+    } catch (err) {
+        switch (err.message) {
+            case "400":
+                res.statusCode = 400;
+                res.end("Bad Request");
+                break;
+            case "404":
+                res.statusCode = 404;
+                res.end("User not found");
+                break;
+            default:
+                res.statusCode = 500;
+                res.end("Server error");
+        }
+    }
 });
 
 module.exports = router;
