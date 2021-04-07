@@ -1,30 +1,30 @@
 [
-    {
-        "id": 1,
-        "name": "Tom",
-        "surname": "Petrenko",
-        "email": "petrenko.t@mail.com",
-        "phone": 380951234567
-    },
-    {
-        "id": 2,
-        "name": "Peter",
-        "surname": "Griffin",
-        "email": "peter_fart@mail.com",
-        "phone": 380671234567
-    },
-    {
-        "id": 3,
-        "name": "Viktor",
-        "surname": "Rudenko",
-        "email": "rudenko.v@mail.com",
-        "phone": 380631234567
-    },
-    {
-        "id": 4,
-        "name": "Ivan",
-        "surname": "Smith",
-        "email": "smith@mail.com",
-        "phone": 380661234567
-    }
+	{
+		"id": 1,
+		"name": "Tom",
+		"surname": "Petrenko",
+		"email": "petrenko.t@mail.com",
+		"phone": 380951234567
+	},
+	{
+		"id": 2,
+		"name": "Peter",
+		"surname": "Griffin",
+		"email": "peter_fart@mail.com",
+		"phone": 380671234567
+	},
+	{
+		"id": 3,
+		"name": "Viktor",
+		"surname": "Rudenko",
+		"email": "rudenko.v@mail.com",
+		"phone": 380631234567
+	},
+	{
+		"id": "4",
+		"name": "Viktorius",
+		"surname": "Rud",
+		"email": "rudenko.v@mail.com",
+		"phone": 103
+	}
 ]

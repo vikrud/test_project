@@ -1,23 +1,12 @@
 const express = require("express");
 var router = express.Router(); // - /v1/user/
-const fsPromises = require("fs").promises;
-
-const filePath = "./database/users.json";
 const jsonParser = express.json();
-const fs = require("fs");
+const { isEmpty, getUser } = require("../../utils.js");
+const userService = require("./user.service");
 
-function isEmpty(obj) {
-    for (let key in obj) {
-        return false;
-    }
-    return true;
-}
-
-//получение всех пользователей
 router.get("/", async function (req, res) {
     try {
-        let data = await fsPromises.readFile(filePath);
-        const users = await JSON.parse(data);
+        let users = await userService.readAllUsers();
         res.send(users);
     } catch (err) {
         res.statusCode = 500;
@@ -25,27 +14,13 @@ router.get("/", async function (req, res) {
     }
 });
 
-//получение конкретного пользователя
 router.get("/:id", async function (req, res) {
     try {
         const id = req.params.id;
-        let userById;
 
-        let data = await fsPromises.readFile(filePath);
-        const users = await JSON.parse(data);
+        let user = await userService.readOneUser(id);
 
-        for (let user of users) {
-            if (user.id == id) {
-                userById = user;
-                break;
-            }
-        }
-
-        if (userById) {
-            res.send(userById);
-        } else {
-            throw new Error(404);
-        }
+        res.send(user);
     } catch (err) {
         if (err.message == 404) {
             res.statusCode = 404;
@@ -57,36 +32,15 @@ router.get("/:id", async function (req, res) {
     }
 });
 
-//создание пользователя
 router.post("/", jsonParser, async function (req, res) {
     try {
         if (isEmpty(req.body)) {
             throw new Error(400);
         }
 
-        const userName = req.body.name;
-        const userSurname = req.body.surname;
-        const userEmail = req.body.email;
-        const userPhone = req.body.phone;
-        let userNewId;
+        let user = getUser(req);
 
-        let data = await fsPromises.readFile(filePath);
-        const users = await JSON.parse(data);
-
-        let maxId = Math.max(...users.map((user) => user.id));
-        userNewId = maxId + 1;
-
-        let newUser = {
-            id: userNewId,
-            name: userName,
-            surname: userSurname,
-            email: userEmail,
-            phone: userPhone,
-        };
-
-        users.push(newUser);
-        let newData = await JSON.stringify(users, null, "\t");
-        await fsPromises.writeFile(filePath, newData);
+        let newUser = await userService.createUser(user);
 
         res.send(newUser);
     } catch (err) {
@@ -100,46 +54,17 @@ router.post("/", jsonParser, async function (req, res) {
     }
 });
 
-//обновление пользователя
 router.put("/:id", jsonParser, async function (req, res) {
     try {
         if (isEmpty(req.body)) {
             throw new Error(400);
         }
 
-        let userIndex;
+        let user = getUser(req);
 
-        const id = req.params.id;
-        const userName = req.body.name;
-        const userSurname = req.body.surname;
-        const userEmail = req.body.email;
-        const userPhone = req.body.phone;
+        let newUser = await userService.updateUser(user);
 
-        let data = await fsPromises.readFile(filePath);
-        let users = await JSON.parse(data);
-
-        for (i = 0; i < users.length; i++) {
-            if (users[i].id == id) {
-                userIndex = i;
-                break;
-            }
-        }
-
-        if (userIndex) {
-            users[userIndex] = {
-                id: id,
-                name: userName,
-                surname: userSurname,
-                email: userEmail,
-                phone: userPhone,
-            };
-        } else {
-            throw new Error(404);
-        }
-
-        let newData = await JSON.stringify(users, null, "\t");
-        await fsPromises.writeFile(filePath, newData);
-        res.send(users[userIndex]);
+        res.send(newUser);
     } catch (err) {
         switch (err.message) {
             case "400":
@@ -157,34 +82,13 @@ router.put("/:id", jsonParser, async function (req, res) {
     }
 });
 
-//удаление пользователя
-router.delete(["/", "/:id"], async function (req, res) {
+router.delete("/:id", async function (req, res) {
     try {
         const id = req.params.id;
-        let userIndex = -1;
 
-        if (!id) {
-            throw new Error(400);
-        }
+        let deletedUser = await userService.deleteUser(id);
 
-        let data = await fsPromises.readFile(filePath);
-        let users = await JSON.parse(data);
-
-        for (i = 0; i < users.length; i++) {
-            if (users[i].id == id) {
-                userIndex = i;
-                break;
-            }
-        }
-
-        if (userIndex > -1) {
-            const user = users.splice(userIndex, 1);
-            let newData = JSON.stringify(users, null, "\t");
-            await fsPromises.writeFile(filePath, newData);
-            res.send(user);
-        } else {
-            throw new Error(404);
-        }
+        res.send(deletedUser);
     } catch (err) {
         switch (err.message) {
             case "400":
