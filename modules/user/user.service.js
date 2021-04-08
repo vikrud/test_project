@@ -1,46 +1,46 @@
 const userRepository = require("./user.repository");
 
 class UserService {
-    readAllUsers() {
-        return userRepository.readFileUsers();
+    async readAllUsers() {
+        return userRepository.readAllUsers();
     }
     async readOneUser(id) {
-        let users = await userRepository.readFileUsers();
-        let userIndex = await userRepository.findUserIndexById(users, id);
-        return users[userIndex];
+        const user = await userRepository.readUserById(id);
+        return user;
     }
 
     async createUser(newUser) {
-        let users = await userRepository.readFileUsers();
-        newUser.id = userRepository.findMaxId(users) + 1;
-        users.push(newUser);
-        await userRepository.saveFileUsers(users);
-        return newUser;
+        const maxUsersId = await userRepository.findMaxUserId();
+        newUser.id = maxUsersId + 1;
+        const savedUser = await userRepository.saveNewUser(newUser);
+        return savedUser;
     }
 
     async updateUser(updatedUser) {
-        let users = await userRepository.readFileUsers();
-        let userIndex = await userRepository.findUserIndexById(
-            users,
-            updatedUser.id
-        );
-        users[userIndex] = updatedUser;
-        await userRepository.saveFileUsers(users);
-        return updatedUser;
+        const savedUser = await userRepository.updateUser(updatedUser);
+        return savedUser;
     }
 
     async deleteUser(id) {
-        let users = await userRepository.readFileUsers();
-        let userIndex = await userRepository.findUserIndexById(users, id);
-        let deletedUser = await userRepository.deleteUserByIndex(
-            users,
-            userIndex
-        );
-        await userRepository.saveFileUsers(users);
+        const deletedUser = await userRepository.deleteUser(id);
         return deletedUser;
+    }
+
+    async getUser(request) {
+        let user = {
+            id: null,
+            name: request.body.name,
+            surname: request.body.surname,
+            email: request.body.email,
+            phone: request.body.phone,
+        };
+
+        if (request.params.id) {
+            user.id = request.params.id;
+        }
+
+        return user;
     }
 }
 
-let userService = new UserService();
-
-module.exports = userService;
+module.exports = new UserService();

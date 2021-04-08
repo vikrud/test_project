@@ -1,34 +1,33 @@
 const express = require("express");
-var router = express.Router(); // - /v1/user/
+const router = express.Router(); // - /v1/user/
 const jsonParser = express.json();
-const { isEmpty, getUser } = require("../../utils.js");
+const { isEmpty } = require("../../utils.js");
+const { errorHandler } = require("../../messages");
 const userService = require("./user.service");
 
 router.get("/", async function (req, res) {
     try {
-        let users = await userService.readAllUsers();
+        const users = await userService.readAllUsers();
         res.send(users);
     } catch (err) {
-        res.statusCode = 500;
-        res.end("Server error");
+        const error = errorHandler(err);
+
+        res.statusCode = error.statusCode;
+        res.end(error.end);
     }
 });
 
 router.get("/:id", async function (req, res) {
     try {
         const id = req.params.id;
-
-        let user = await userService.readOneUser(id);
+        const user = await userService.readOneUser(id);
 
         res.send(user);
     } catch (err) {
-        if (err.message == 404) {
-            res.statusCode = 404;
-            res.end("User not found");
-        } else {
-            res.statusCode = 500;
-            res.end("Server error");
-        }
+        const error = errorHandler(err);
+
+        res.statusCode = error.statusCode;
+        res.end(error.end);
     }
 });
 
@@ -38,19 +37,15 @@ router.post("/", jsonParser, async function (req, res) {
             throw new Error(400);
         }
 
-        let user = getUser(req);
-
-        let newUser = await userService.createUser(user);
+        let user = await userService.getUser(req);
+        const newUser = await userService.createUser(user);
 
         res.send(newUser);
     } catch (err) {
-        if (err.message == 400) {
-            res.statusCode = 400;
-            res.end("Bad Request");
-        } else {
-            res.statusCode = 500;
-            res.end("Server error");
-        }
+        const error = errorHandler(err);
+
+        res.statusCode = error.statusCode;
+        res.end(error.end);
     }
 });
 
@@ -60,25 +55,15 @@ router.put("/:id", jsonParser, async function (req, res) {
             throw new Error(400);
         }
 
-        let user = getUser(req);
-
-        let newUser = await userService.updateUser(user);
+        const user = await userService.getUser(req);
+        const newUser = await userService.updateUser(user);
 
         res.send(newUser);
     } catch (err) {
-        switch (err.message) {
-            case "400":
-                res.statusCode = 400;
-                res.end("Bad Request");
-                break;
-            case "404":
-                res.statusCode = 404;
-                res.end("User not found");
-                break;
-            default:
-                res.statusCode = 500;
-                res.end("Server error");
-        }
+        const error = errorHandler(err);
+
+        res.statusCode = error.statusCode;
+        res.end(error.end);
     }
 });
 
@@ -86,23 +71,14 @@ router.delete("/:id", async function (req, res) {
     try {
         const id = req.params.id;
 
-        let deletedUser = await userService.deleteUser(id);
+        const deletedUser = await userService.deleteUser(id);
 
         res.send(deletedUser);
     } catch (err) {
-        switch (err.message) {
-            case "400":
-                res.statusCode = 400;
-                res.end("Bad Request");
-                break;
-            case "404":
-                res.statusCode = 404;
-                res.end("User not found");
-                break;
-            default:
-                res.statusCode = 500;
-                res.end("Server error");
-        }
+        const error = errorHandler(err);
+
+        res.statusCode = error.statusCode;
+        res.end(error.end);
     }
 });
 

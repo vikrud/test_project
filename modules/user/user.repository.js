@@ -1,43 +1,88 @@
-const express = require("express");
 const fsPromises = require("fs").promises;
 const filePath = "./database/users.json";
 
 class UserRepository {
-    async readFileUsers() {
-        let data = await fsPromises.readFile(filePath);
+    async readAllUsers() {
+        const data = await fsPromises.readFile(filePath);
         const usersArr = await JSON.parse(data);
+
         return usersArr;
     }
 
-    findUserIndexById(usersArr, id) {
+    async findUserIndexById(id) {
+        const usersArr = await this.readAllUsers();
         let userIndex;
+
         for (let i = 0; i < usersArr.length; i++) {
             if (usersArr[i].id == id) {
                 userIndex = i;
                 return userIndex;
             }
         }
+
         throw new Error(404);
     }
 
-    findMaxId(usersArr) {
-        let usersId = usersArr.map((usersArr) => usersArr.id);
-        let maxId = Math.max(...usersId);
+    async readUserById(id) {
+        const usersArr = await this.readAllUsers();
+        const index = await this.findUserIndexById(id);
+
+        return usersArr[index];
+    }
+
+    async findMaxUserId() {
+        const usersArr = await this.readAllUsers();
+        const usersIdArr = usersArr.map((usersArr) => usersArr.id);
+        const maxId = Math.max(...usersIdArr);
+
         return maxId;
     }
 
-    deleteUserByIndex(users, index) {
-        let user = users.splice(index, 1);
-        return user;
+    async saveNewUser(newUser) {
+        let usersArr = await this.readAllUsers();
+        usersArr.push(newUser);
+        const isSaved = await this.saveFileUsers(usersArr);
+
+        if (!isSaved) {
+            throw new Error(500);
+        }
+
+        return newUser;
+    }
+
+    async updateUser(updatedUser) {
+        let usersArr = await this.readAllUsers();
+        const userIndex = await this.findUserIndexById(updatedUser.id);
+
+        usersArr[userIndex] = updatedUser;
+
+        const isSaved = await this.saveFileUsers(usersArr);
+        if (!isSaved) {
+            throw new Error(500);
+        }
+
+        return updatedUser;
+    }
+
+    async deleteUser(id) {
+        let usersArr = await this.readAllUsers();
+        const userIndex = await this.findUserIndexById(id);
+        const deletedUser = usersArr.splice(userIndex, 1);
+
+        const isSaved = await this.saveFileUsers(usersArr);
+        if (!isSaved) {
+            throw new Error(500);
+        }
+
+        return deletedUser;
     }
 
     async saveFileUsers(users) {
-        let newData = await JSON.stringify(users, null, "\t");
+        const newData = await JSON.stringify(users, null, "\t");
         await fsPromises.writeFile(filePath, newData);
+
         return true;
     }
 }
 
-let userRepository = new UserRepository();
-
-module.exports = userRepository;
+module.exports = new UserRepository();
