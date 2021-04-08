@@ -11,8 +11,9 @@ function errorHandler(err) {
             handledError.end = "User not found";
             break;
         default:
-            handledError.statusCode = 500;
-            handledError.end = "Server error";
+            console.log(err);
+        /* handledError.statusCode = 500;
+            handledError.end = "Server error"; */
     }
 
     return handledError;

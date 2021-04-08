@@ -1,4 +1,4 @@
-const userRepository = require("./user.repository");
+const { userRepository } = require("./user.repository");
 
 class UserService {
     async readAllUsers() {
@@ -26,21 +26,21 @@ class UserService {
         return deletedUser;
     }
 
-    async getUser(request) {
+    async getUser(userBody) {
         let user = {
             id: null,
-            name: request.body.name,
-            surname: request.body.surname,
-            email: request.body.email,
-            phone: request.body.phone,
+            name: userBody.body.name,
+            surname: userBody.body.surname,
+            email: userBody.body.email,
+            phone: userBody.body.phone,
         };
 
-        if (request.params.id) {
-            user.id = request.params.id;
+        if (userBody.params.id) {
+            user.id = userBody.params.id;
         }
 
         return user;
     }
 }
 
-module.exports = new UserService();
+module.exports = { userService: new UserService() };

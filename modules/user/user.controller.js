@@ -3,7 +3,7 @@ const router = express.Router(); // - /v1/user/
 const jsonParser = express.json();
 const { isEmpty } = require("../../utils.js");
 const { errorHandler } = require("../../messages");
-const userService = require("./user.service");
+const { userService } = require("./user.service");
 
 router.get("/", async function (req, res) {
     try {
