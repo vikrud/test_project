@@ -26,7 +26,7 @@ class UserRepository {
             }
         }
 
-        throw new CustomError("cantFindUserById");
+        throw new CustomError("CANT_FIND_USER_BY_ID");
     }
 
     async readUserById(id) {

@@ -26,5 +26,19 @@
 		"surname": "Rud",
 		"email": "rudenko.v@mail.com",
 		"phone": 103
+	},
+	{
+		"id": 5,
+		"name": "Ivan",
+		"surname": "Smith",
+		"email": "smith@mail.com",
+		"phone": 380661234567
+	},
+	{
+		"id": 7,
+		"name": "Ivan",
+		"surname": "Smith",
+		"email": "smith@mail.com",
+		"phone": 380661234567
 	}
 ]

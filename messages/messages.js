@@ -1,16 +1,9 @@
 const messages = {
-    userCreated: {
-        code: 200,
-        message: "New user created successfully!",
-    },
-    userUpdated: {
-        code: 200,
-        message: "User updated successfully!",
-    },
-    userDeleted: {
-        code: 200,
-        message: "User deleted successfully!",
-    },
+    USER_CREATED_MESSAGE: "New user created successfully!",
+
+    USER_UPDATED_MESSAGE: "User updated successfully!",
+
+    USER_DELETED_MESSAGE: "User deleted successfully!",
 };
 
 module.exports = { messages };

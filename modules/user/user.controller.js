@@ -3,8 +3,8 @@ const router = express.Router(); // - /v1/user/
 const jsonParser = express.json();
 const { userService } = require("./user.service");
 const { isEmpty, isArrayWithData } = require("../../utils.js");
-const { errorHandler } = require("../../errorHandler");
-const { CustomError, MessageToUser } = require("../../errorHandler");
+const { errorHandler, CustomError } = require("../../errorHandler");
+const { MessageToUser } = require("../../userMessage");
 
 function extractUserDataFromRequest(request) {
     let user = {
@@ -27,10 +27,7 @@ function insertDataIntoResponseObj(data) {
         success: false,
     };
 
-    if (data.type == "message") {
-        responseObj.success = true;
-        responseObj.message = data.message;
-    } else if (data.type == "error") {
+    if (data.type == "error") {
         responseObj.success = false;
         responseObj.error = data.message;
     } else if (isArrayWithData(data)) {
@@ -50,7 +47,7 @@ router.get("/", async function (req, res) {
 
         const responseData = await insertDataIntoResponseObj(users);
 
-        res.send(responseData);
+        res.status(200).send(responseData);
     } catch (err) {
         const error = errorHandler(err);
 
@@ -69,7 +66,7 @@ router.get("/:id", async function (req, res) {
 
         const responseData = await insertDataIntoResponseObj(user);
 
-        res.send(responseData);
+        res.status(200).send(responseData);
     } catch (err) {
         const error = errorHandler(err);
         const responseData = await insertDataIntoResponseObj(error);
@@ -83,18 +80,18 @@ router.get("/:id", async function (req, res) {
 router.post("/", jsonParser, async function (req, res) {
     try {
         if (isEmpty(req.body)) {
-            throw new CustomError("emptyNewUserData");
+            throw new CustomError("EMPTY_NEW_USER_DATA");
         }
 
         const user = await extractUserDataFromRequest(req);
         const result = await userService.createUser(user);
 
         const responseData = await insertDataIntoResponseObj([
-            new MessageToUser("userCreated"),
+            new MessageToUser("USER_CREATED_MESSAGE"),
             result,
         ]);
 
-        res.send(responseData);
+        res.status(200).send(responseData);
     } catch (err) {
         const error = errorHandler(err);
         const responseData = await insertDataIntoResponseObj(error);
@@ -108,18 +105,18 @@ router.post("/", jsonParser, async function (req, res) {
 router.put("/:id", jsonParser, async function (req, res) {
     try {
         if (isEmpty(req.body)) {
-            throw new CustomError("emptyUserDataForUpdate");
+            throw new CustomError("EMPTY_USER_DATA_FOR_UPDATE");
         }
 
         const user = await extractUserDataFromRequest(req);
         const result = await userService.updateUser(user);
 
         const responseData = await insertDataIntoResponseObj([
-            new MessageToUser("userUpdated"),
+            new MessageToUser("USER_UPDATED_MESSAGE"),
             result,
         ]);
 
-        res.send(responseData);
+        res.status(200).send(responseData);
     } catch (err) {
         const error = errorHandler(err);
         const responseData = await insertDataIntoResponseObj(error);
@@ -137,7 +134,7 @@ router.delete("/:id", async function (req, res) {
         const result = await userService.deleteUser(id);
 
         const responseData = await insertDataIntoResponseObj([
-            new MessageToUser("userDeleted"),
+            new MessageToUser("USER_DELETED_MESSAGE"),
             result,
         ]);
 
