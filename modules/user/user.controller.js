@@ -1,19 +1,64 @@
 const express = require("express");
 const router = express.Router(); // - /v1/user/
 const jsonParser = express.json();
-const { isEmpty } = require("../../utils.js");
-const { errorHandler } = require("../../messages");
 const { userService } = require("./user.service");
+const { isEmpty, isArrayWithData } = require("../../utils.js");
+const { errorHandler } = require("../../errorHandler");
+const { CustomError, MessageToUser } = require("../../errorHandler");
+
+function extractUserDataFromRequest(request) {
+    let user = {
+        id: null,
+        name: request.body.name,
+        surname: request.body.surname,
+        email: request.body.email,
+        phone: request.body.phone,
+    };
+
+    if (request.params.id) {
+        user.id = request.params.id;
+    }
+
+    return user;
+}
+
+function insertDataIntoResponseObj(data) {
+    let responseObj = {
+        success: false,
+    };
+
+    if (data.type == "message") {
+        responseObj.success = true;
+        responseObj.message = data.message;
+    } else if (data.type == "error") {
+        responseObj.success = false;
+        responseObj.error = data.message;
+    } else if (isArrayWithData(data)) {
+        responseObj.success = true;
+        responseObj.data = data;
+    } else if (data[0].statusCode == 200 && isArrayWithData(data[1])) {
+        responseObj.success = true;
+        responseObj.message = data[0].message;
+    }
+
+    return responseObj;
+}
 
 router.get("/", async function (req, res) {
     try {
         const users = await userService.readAllUsers();
-        res.send(users);
+
+        const responseData = await insertDataIntoResponseObj(users);
+
+        res.send(responseData);
     } catch (err) {
         const error = errorHandler(err);
 
+        const responseData = await insertDataIntoResponseObj(error);
+
         res.statusCode = error.statusCode;
-        res.end(error.end);
+        res.send(responseData);
+        res.end();
     }
 });
 
@@ -22,48 +67,66 @@ router.get("/:id", async function (req, res) {
         const id = req.params.id;
         const user = await userService.readOneUser(id);
 
-        res.send(user);
+        const responseData = await insertDataIntoResponseObj(user);
+
+        res.send(responseData);
     } catch (err) {
         const error = errorHandler(err);
+        const responseData = await insertDataIntoResponseObj(error);
 
         res.statusCode = error.statusCode;
-        res.end(error.end);
+        res.send(responseData);
+        res.end();
     }
 });
 
 router.post("/", jsonParser, async function (req, res) {
     try {
         if (isEmpty(req.body)) {
-            throw new Error(400);
+            throw new CustomError("emptyNewUserData");
         }
 
-        let user = await userService.getUser(req);
-        const newUser = await userService.createUser(user);
+        const user = await extractUserDataFromRequest(req);
+        const result = await userService.createUser(user);
 
-        res.send(newUser);
+        const responseData = await insertDataIntoResponseObj([
+            new MessageToUser("userCreated"),
+            result,
+        ]);
+
+        res.send(responseData);
     } catch (err) {
         const error = errorHandler(err);
+        const responseData = await insertDataIntoResponseObj(error);
 
         res.statusCode = error.statusCode;
-        res.end(error.end);
+        res.send(responseData);
+        res.end();
     }
 });
 
 router.put("/:id", jsonParser, async function (req, res) {
     try {
         if (isEmpty(req.body)) {
-            throw new Error(400);
+            throw new CustomError("emptyUserDataForUpdate");
         }
 
-        const user = await userService.getUser(req);
-        const newUser = await userService.updateUser(user);
+        const user = await extractUserDataFromRequest(req);
+        const result = await userService.updateUser(user);
 
-        res.send(newUser);
+        const responseData = await insertDataIntoResponseObj([
+            new MessageToUser("userUpdated"),
+            result,
+        ]);
+
+        res.send(responseData);
     } catch (err) {
         const error = errorHandler(err);
+        const responseData = await insertDataIntoResponseObj(error);
 
         res.statusCode = error.statusCode;
-        res.end(error.end);
+        res.send(responseData);
+        res.end();
     }
 });
 
@@ -71,14 +134,21 @@ router.delete("/:id", async function (req, res) {
     try {
         const id = req.params.id;
 
-        const deletedUser = await userService.deleteUser(id);
+        const result = await userService.deleteUser(id);
 
-        res.send(deletedUser);
+        const responseData = await insertDataIntoResponseObj([
+            new MessageToUser("userDeleted"),
+            result,
+        ]);
+
+        res.send(responseData);
     } catch (err) {
         const error = errorHandler(err);
+        const responseData = await insertDataIntoResponseObj(error);
 
         res.statusCode = error.statusCode;
-        res.end(error.end);
+        res.send(responseData);
+        res.end();
     }
 });
 

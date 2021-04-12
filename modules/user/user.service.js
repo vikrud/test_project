@@ -2,44 +2,29 @@ const { userRepository } = require("./user.repository");
 
 class UserService {
     async readAllUsers() {
-        return userRepository.readAllUsers();
+        const result = await userRepository.readAllUsers();
+        return result;
     }
     async readOneUser(id) {
-        const user = await userRepository.readUserById(id);
-        return user;
+        const result = await userRepository.readUserById(id);
+        return result;
     }
 
     async createUser(newUser) {
         const maxUsersId = await userRepository.findMaxUserId();
         newUser.id = maxUsersId + 1;
-        const savedUser = await userRepository.saveNewUser(newUser);
-        return savedUser;
+        const result = await userRepository.saveNewUser(newUser);
+        return result;
     }
 
     async updateUser(updatedUser) {
-        const savedUser = await userRepository.updateUser(updatedUser);
-        return savedUser;
+        const result = await userRepository.updateUser(updatedUser);
+        return result;
     }
 
     async deleteUser(id) {
-        const deletedUser = await userRepository.deleteUser(id);
-        return deletedUser;
-    }
-
-    async getUser(userBody) {
-        let user = {
-            id: null,
-            name: userBody.body.name,
-            surname: userBody.body.surname,
-            email: userBody.body.email,
-            phone: userBody.body.phone,
-        };
-
-        if (userBody.params.id) {
-            user.id = userBody.params.id;
-        }
-
-        return user;
+        const result = await userRepository.deleteUser(id);
+        return result;
     }
 }
 

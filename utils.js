@@ -5,4 +5,12 @@ function isEmpty(obj) {
     return true;
 }
 
-module.exports = { isEmpty };
+function isArrayWithData(arr) {
+    if (Array.isArray(arr) && arr[0].id) {
+        return true;
+    }
+
+    return false;
+}
+
+module.exports = { isEmpty, isArrayWithData };

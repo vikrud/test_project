@@ -1,12 +1,18 @@
 const fsPromises = require("fs").promises;
 const filePath = "./database/users.json";
+const { CustomError } = require("../../errorHandler");
+const { isArrayWithData } = require("../../utils");
 
 class UserRepository {
     async readAllUsers() {
         const data = await fsPromises.readFile(filePath);
         const usersArr = await JSON.parse(data);
 
-        return usersArr;
+        if (isArrayWithData(usersArr)) {
+            return usersArr;
+        } else {
+            throw new Error(500);
+        }
     }
 
     async findUserIndexById(id) {
@@ -20,14 +26,14 @@ class UserRepository {
             }
         }
 
-        throw new Error(404);
+        throw new CustomError("cantFindUserById");
     }
 
     async readUserById(id) {
         const usersArr = await this.readAllUsers();
         const index = await this.findUserIndexById(id);
 
-        return usersArr[index];
+        return [usersArr[index]];
     }
 
     async findMaxUserId() {
@@ -41,45 +47,40 @@ class UserRepository {
     async saveNewUser(newUser) {
         let usersArr = await this.readAllUsers();
         usersArr.push(newUser);
-        const isSaved = await this.saveFileUsers(usersArr);
 
-        if (!isSaved) {
-            throw new Error(500);
-        }
+        await this.saveFileUsers(usersArr);
 
-        return newUser;
+        return [newUser];
     }
 
     async updateUser(updatedUser) {
-        let usersArr = await this.readAllUsers();
+        const usersArr = await this.readAllUsers();
         const userIndex = await this.findUserIndexById(updatedUser.id);
 
         usersArr[userIndex] = updatedUser;
 
-        const isSaved = await this.saveFileUsers(usersArr);
-        if (!isSaved) {
-            throw new Error(500);
-        }
+        await this.saveFileUsers(usersArr);
 
-        return updatedUser;
+        return [updatedUser];
     }
 
     async deleteUser(id) {
-        let usersArr = await this.readAllUsers();
+        const usersArr = await this.readAllUsers();
         const userIndex = await this.findUserIndexById(id);
         const deletedUser = usersArr.splice(userIndex, 1);
 
-        const isSaved = await this.saveFileUsers(usersArr);
-        if (!isSaved) {
-            throw new Error(500);
-        }
+        await this.saveFileUsers(usersArr);
 
         return deletedUser;
     }
 
     async saveFileUsers(users) {
         const newData = await JSON.stringify(users, null, "\t");
-        await fsPromises.writeFile(filePath, newData);
+        const isSaved = await fsPromises.writeFile(filePath, newData);
+
+        if (isSaved) {
+            throw new Error(500);
+        }
 
         return true;
     }
