@@ -1,66 +1,152 @@
 const express = require("express");
-var router = express.Router(); // - /v1/user/
-
-const filePath = "./database/users.json";
+const router = express.Router(); // - /v1/user/
 const jsonParser = express.json();
-const fs = require("fs");
+const { userService } = require("./user.service");
+const { isEmpty, isArrayWithData } = require("../../utils.js");
+const { errorHandler, CustomError } = require("../../errorHandler");
+const { MessageToUser } = require("../../userMessage");
 
-//получение всех пользователей
-router.get("/", function (req, res) {
-    fs.readFile(filePath, function (err, content) {
-        if (err) {
-            res.statusCode = 500;
-            res.end("Server error");
-            return;
-        }
+function extractUserDataFromRequest(request) {
+    let user = {
+        id: null,
+        name: request.body.name,
+        surname: request.body.surname,
+        email: request.body.email,
+        phone: request.body.phone,
+    };
 
-        const users = JSON.parse(content);
-        res.send(users);
-    });
+    if (request.params.id) {
+        user.id = request.params.id;
+    }
+
+    return user;
+}
+
+function insertDataIntoResponseObj(data) {
+    let responseObj = {
+        success: false,
+    };
+
+    if (data.type == "error") {
+        responseObj.success = false;
+        responseObj.error = data.message;
+    } else if (isArrayWithData(data)) {
+        responseObj.success = true;
+        responseObj.data = data;
+    } else if (data[0].statusCode == 200 && isArrayWithData(data[1])) {
+        responseObj.success = true;
+        responseObj.message = data[0].message;
+    }
+
+    return responseObj;
+}
+
+router.get("/", async function (req, res) {
+    try {
+        const users = await userService.readAllUsers();
+
+        const responseData = await insertDataIntoResponseObj(users);
+
+        res.status(200).send(responseData);
+    } catch (err) {
+        const error = errorHandler(err);
+
+        const responseData = await insertDataIntoResponseObj(error);
+
+        res.statusCode = error.statusCode;
+        res.send(responseData);
+        res.end();
+    }
 });
 
-//получение конкретного пользователя
-router.get("/:id", function (req, res) {
-    const id = req.params.id;
-    let userById = null;
+router.get("/:id", async function (req, res) {
+    try {
+        const id = req.params.id;
+        const user = await userService.readOneUser(id);
 
-    fs.readFile(filePath, function (err, content) {
-        if (err) {
-            res.statusCode = 500;
-            res.end("Server error");
-            return;
-        }
+        const responseData = await insertDataIntoResponseObj(user);
 
-        const users = JSON.parse(content);
-        for (let user of users) {
-            if (user.id == id) {
-                userById = user;
-                break;
-            }
-        }
+        res.status(200).send(responseData);
+    } catch (err) {
+        const error = errorHandler(err);
+        const responseData = await insertDataIntoResponseObj(error);
 
-        if (userById) {
-            res.send(userById);
-        } else {
-            res.statusCode = 404;
-            res.end("User not found");
-        }
-    });
+        res.statusCode = error.statusCode;
+        res.send(responseData);
+        res.end();
+    }
 });
 
-//создание пользователя
-router.post("/", function (req, res) {
-    res.send("post");
+router.post("/", jsonParser, async function (req, res) {
+    try {
+        if (isEmpty(req.body)) {
+            throw new CustomError("EMPTY_NEW_USER_DATA");
+        }
+
+        const user = await extractUserDataFromRequest(req);
+        const result = await userService.createUser(user);
+
+        const responseData = await insertDataIntoResponseObj([
+            new MessageToUser("USER_CREATED_MESSAGE"),
+            result,
+        ]);
+
+        res.status(200).send(responseData);
+    } catch (err) {
+        const error = errorHandler(err);
+        const responseData = await insertDataIntoResponseObj(error);
+
+        res.statusCode = error.statusCode;
+        res.send(responseData);
+        res.end();
+    }
 });
 
-//обновление пользователя
-router.put("/", function (req, res) {
-    res.send("put");
+router.put("/:id", jsonParser, async function (req, res) {
+    try {
+        if (isEmpty(req.body)) {
+            throw new CustomError("EMPTY_USER_DATA_FOR_UPDATE");
+        }
+
+        const user = await extractUserDataFromRequest(req);
+        const result = await userService.updateUser(user);
+
+        const responseData = await insertDataIntoResponseObj([
+            new MessageToUser("USER_UPDATED_MESSAGE"),
+            result,
+        ]);
+
+        res.status(200).send(responseData);
+    } catch (err) {
+        const error = errorHandler(err);
+        const responseData = await insertDataIntoResponseObj(error);
+
+        res.statusCode = error.statusCode;
+        res.send(responseData);
+        res.end();
+    }
 });
 
-//удаление пользователя
-router.delete("/", function (req, res) {
-    res.send("delete");
+router.delete("/:id", async function (req, res) {
+    try {
+        const id = req.params.id;
+
+        const result = await userService.deleteUser(id);
+
+        const responseData = await insertDataIntoResponseObj([
+            new MessageToUser("USER_DELETED_MESSAGE"),
+            result,
+        ]);
+
+        res.send(responseData);
+    } catch (err) {
+        const error = errorHandler(err);
+        const responseData = await insertDataIntoResponseObj(error);
+
+        res.statusCode = error.statusCode;
+        res.send(responseData);
+        res.end();
+    }
 });
 
 module.exports = router;
