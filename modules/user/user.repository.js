@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const { CustomError } = require("../../errorHandler");
 require("dotenv").config();
-const url = process.env.MONGODB_URL;
 
 const userScheme = new Schema({
     id: Number,
@@ -21,11 +20,6 @@ const userAggregateForm = {
     email: 1,
     phone: 1,
 };
-
-mongoose.connect(url, {
-    useUnifiedTopology: true,
-    useNewUrlParser: true,
-});
 
 class UserRepository {
     async readAllUsers() {
@@ -47,8 +41,7 @@ class UserRepository {
     }
 
     async readUserById(userId) {
-        const mongoId = await this.findMongoIdByUserId(userId);
-        const user = await UserModel.findById(mongoId, userAggregateForm);
+        const user = await UserModel.findOne({ id: userId }, userAggregateForm);
 
         if (!user) {
             throw new CustomError("CANT_FIND_USER_BY_ID");
@@ -73,12 +66,9 @@ class UserRepository {
         if (!savedUser) {
             throw new Error(500);
         }
-
-        return [savedUser];
     }
 
     async updateUser(updatedUserData) {
-        mongoose.set("useFindAndModify", false);
         const mongoId = await this.findMongoIdByUserId(updatedUserData.id);
         const updatedUser = await UserModel.findByIdAndUpdate(
             mongoId,
@@ -86,7 +76,9 @@ class UserRepository {
             { new: true, select: userAggregateForm }
         );
 
-        return [updatedUser];
+        if (!updatedUser) {
+            throw new Error(500);
+        }
     }
 
     async deleteUser(id) {
@@ -95,7 +87,9 @@ class UserRepository {
             select: userAggregateForm,
         });
 
-        return [deletedUser];
+        if (!deletedUser) {
+            throw new Error(500);
+        }
     }
 }
 
