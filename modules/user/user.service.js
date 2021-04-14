@@ -13,18 +13,15 @@ class UserService {
     async createUser(newUser) {
         const maxUsersId = await userRepository.findMaxUserId();
         newUser.id = maxUsersId + 1;
-        const result = await userRepository.saveNewUser(newUser);
-        return result;
+        await userRepository.saveNewUser(newUser);
     }
 
     async updateUser(updatedUser) {
-        const result = await userRepository.updateUser(updatedUser);
-        return result;
+        await userRepository.updateUser(updatedUser);
     }
 
     async deleteUser(id) {
-        const result = await userRepository.deleteUser(id);
-        return result;
+        await userRepository.deleteUser(id);
     }
 }
 

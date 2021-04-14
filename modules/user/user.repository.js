@@ -1,39 +1,53 @@
-const fsPromises = require("fs").promises;
-const filePath = "./database/users.json";
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 const { CustomError } = require("../../errorHandler");
-const { isArrayWithData } = require("../../utils");
+require("dotenv").config();
+
+const userScheme = new Schema({
+    id: Number,
+    name: String,
+    surname: String,
+    email: String,
+    phone: Number,
+});
+const UserModel = mongoose.model("User", userScheme);
+
+const userAggregateForm = {
+    _id: 0,
+    id: 1,
+    name: 1,
+    surname: 1,
+    email: 1,
+    phone: 1,
+};
 
 class UserRepository {
     async readAllUsers() {
-        const data = await fsPromises.readFile(filePath);
-        const usersArr = await JSON.parse(data);
+        const usersArr = await UserModel.find({}, userAggregateForm);
 
-        if (isArrayWithData(usersArr)) {
-            return usersArr;
-        } else {
-            throw new Error(500);
-        }
+        return usersArr;
     }
 
-    async findUserIndexById(id) {
-        const usersArr = await this.readAllUsers();
-        let userIndex;
+    async findMongoIdByUserId(userId) {
+        const user = await UserModel.findOne({ id: userId }, { _id: 1 });
 
-        for (let i = 0; i < usersArr.length; i++) {
-            if (usersArr[i].id == id) {
-                userIndex = i;
-                return userIndex;
-            }
+        if (!user) {
+            throw new CustomError("CANT_FIND_USER_BY_ID");
         }
 
-        throw new CustomError("CANT_FIND_USER_BY_ID");
+        const mongoId = user._id;
+
+        return mongoId;
     }
 
-    async readUserById(id) {
-        const usersArr = await this.readAllUsers();
-        const index = await this.findUserIndexById(id);
+    async readUserById(userId) {
+        const user = await UserModel.findOne({ id: userId }, userAggregateForm);
 
-        return [usersArr[index]];
+        if (!user) {
+            throw new CustomError("CANT_FIND_USER_BY_ID");
+        }
+
+        return [user];
     }
 
     async findMaxUserId() {
@@ -45,44 +59,37 @@ class UserRepository {
     }
 
     async saveNewUser(newUser) {
-        let usersArr = await this.readAllUsers();
-        usersArr.push(newUser);
+        const newMongoUser = new UserModel(newUser);
+        await newMongoUser.save();
+        const savedUser = await UserModel.findOne(newMongoUser);
 
-        await this.saveFileUsers(usersArr);
-
-        return [newUser];
+        if (!savedUser) {
+            throw new Error(500);
+        }
     }
 
-    async updateUser(updatedUser) {
-        const usersArr = await this.readAllUsers();
-        const userIndex = await this.findUserIndexById(updatedUser.id);
+    async updateUser(updatedUserData) {
+        const mongoId = await this.findMongoIdByUserId(updatedUserData.id);
+        const updatedUser = await UserModel.findByIdAndUpdate(
+            mongoId,
+            updatedUserData,
+            { new: true, select: userAggregateForm }
+        );
 
-        usersArr[userIndex] = updatedUser;
-
-        await this.saveFileUsers(usersArr);
-
-        return [updatedUser];
+        if (!updatedUser) {
+            throw new Error(500);
+        }
     }
 
     async deleteUser(id) {
-        const usersArr = await this.readAllUsers();
-        const userIndex = await this.findUserIndexById(id);
-        const deletedUser = usersArr.splice(userIndex, 1);
+        const mongoId = await this.findMongoIdByUserId(id);
+        const deletedUser = await UserModel.findByIdAndDelete(mongoId, {
+            select: userAggregateForm,
+        });
 
-        await this.saveFileUsers(usersArr);
-
-        return deletedUser;
-    }
-
-    async saveFileUsers(users) {
-        const newData = await JSON.stringify(users, null, "\t");
-        const isSaved = await fsPromises.writeFile(filePath, newData);
-
-        if (isSaved) {
+        if (!deletedUser) {
             throw new Error(500);
         }
-
-        return true;
     }
 }
 

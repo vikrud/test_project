@@ -26,16 +26,16 @@ function insertDataIntoResponseObj(data) {
     let responseObj = {
         success: false,
     };
-
+    console.log(data);
     if (data.type == "error") {
         responseObj.success = false;
         responseObj.error = data.message;
     } else if (isArrayWithData(data)) {
         responseObj.success = true;
         responseObj.data = data;
-    } else if (data[0].statusCode == 200 && isArrayWithData(data[1])) {
+    } else if (data instanceof MessageToUser) {
         responseObj.success = true;
-        responseObj.message = data[0].message;
+        responseObj.message = data.message;
     }
 
     return responseObj;
@@ -84,12 +84,11 @@ router.post("/", jsonParser, async function (req, res) {
         }
 
         const user = await extractUserDataFromRequest(req);
-        const result = await userService.createUser(user);
+        await userService.createUser(user);
 
-        const responseData = await insertDataIntoResponseObj([
-            new MessageToUser("USER_CREATED_MESSAGE"),
-            result,
-        ]);
+        const responseData = await insertDataIntoResponseObj(
+            new MessageToUser("USER_CREATED_MESSAGE")
+        );
 
         res.status(200).send(responseData);
     } catch (err) {
@@ -109,12 +108,11 @@ router.put("/:id", jsonParser, async function (req, res) {
         }
 
         const user = await extractUserDataFromRequest(req);
-        const result = await userService.updateUser(user);
+        await userService.updateUser(user);
 
-        const responseData = await insertDataIntoResponseObj([
-            new MessageToUser("USER_UPDATED_MESSAGE"),
-            result,
-        ]);
+        const responseData = await insertDataIntoResponseObj(
+            new MessageToUser("USER_UPDATED_MESSAGE")
+        );
 
         res.status(200).send(responseData);
     } catch (err) {
@@ -131,12 +129,11 @@ router.delete("/:id", async function (req, res) {
     try {
         const id = req.params.id;
 
-        const result = await userService.deleteUser(id);
+        await userService.deleteUser(id);
 
-        const responseData = await insertDataIntoResponseObj([
-            new MessageToUser("USER_DELETED_MESSAGE"),
-            result,
-        ]);
+        const responseData = await insertDataIntoResponseObj(
+            new MessageToUser("USER_DELETED_MESSAGE")
+        );
 
         res.send(responseData);
     } catch (err) {
