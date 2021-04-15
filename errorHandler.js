@@ -19,9 +19,11 @@ function errorHandler(err) {
     if (err instanceof CustomError) {
         handledError.statusCode = err.statusCode;
         handledError.message = err.message;
-    } else if (err instanceof Error) {
-        handledError.statusCode = Number(err.message);
-        handledError.message = HttpCodes[Number(err.message)];
+    } else if (err.name == "MongoError" && err.code == 11000) {
+        handledError.statusCode =
+            customErrors.EMAIL_OR_PHONE_ALREADY_IN_USE.code;
+        handledError.message =
+            customErrors.EMAIL_OR_PHONE_ALREADY_IN_USE.message;
     } else {
         handledError.statusCode = 500;
         handledError.message = HttpCodes[500];

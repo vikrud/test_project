@@ -4,11 +4,33 @@ const { CustomError } = require("../../errorHandler");
 require("dotenv").config();
 
 const userScheme = new Schema({
-    id: Number,
-    name: String,
-    surname: String,
-    email: String,
-    phone: Number,
+    id: {
+        type: Number,
+        required: true,
+        unique: true,
+    },
+    name: {
+        type: String,
+        required: true,
+    },
+    surname: {
+        type: String,
+        required: true,
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+    },
+    phone: {
+        type: Number,
+        required: true,
+        unique: true,
+    },
+    password: {
+        type: String,
+        required: true,
+    },
 });
 const UserModel = mongoose.model("User", userScheme);
 
@@ -19,6 +41,7 @@ const userAggregateForm = {
     surname: 1,
     email: 1,
     phone: 1,
+    password: 1,
 };
 
 class UserRepository {

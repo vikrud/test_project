@@ -1,19 +1,25 @@
 const express = require("express");
 const router = express.Router(); // - /v1/user/
-const jsonParser = express.json();
 const { userService } = require("./user.service");
 const { isEmpty, isArrayWithData } = require("../../utils.js");
 const { errorHandler, CustomError } = require("../../errorHandler");
 const { MessageToUser } = require("../../userMessage");
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
 
-function extractUserDataFromRequest(request) {
+async function extractUserDataFromRequest(request) {
     let user = {
         id: null,
         name: request.body.name,
         surname: request.body.surname,
         email: request.body.email,
         phone: request.body.phone,
+        password: null,
     };
+
+    await bcrypt.hash(request.body.password, saltRounds).then(function (hash) {
+        user.password = hash;
+    });
 
     if (request.params.id) {
         user.id = request.params.id;
@@ -26,7 +32,7 @@ function insertDataIntoResponseObj(data) {
     let responseObj = {
         success: false,
     };
-    console.log(data);
+
     if (data.type == "error") {
         responseObj.success = false;
         responseObj.error = data.message;
@@ -41,7 +47,10 @@ function insertDataIntoResponseObj(data) {
     return responseObj;
 }
 
-router.get("/", async function (req, res) {
+router.use(express.json());
+router.use(express.urlencoded({ extended: true }));
+
+router.get("/", async function (req, res, next) {
     try {
         const users = await userService.readAllUsers();
 
@@ -49,17 +58,11 @@ router.get("/", async function (req, res) {
 
         res.status(200).send(responseData);
     } catch (err) {
-        const error = errorHandler(err);
-
-        const responseData = await insertDataIntoResponseObj(error);
-
-        res.statusCode = error.statusCode;
-        res.send(responseData);
-        res.end();
+        next(err);
     }
 });
 
-router.get("/:id", async function (req, res) {
+router.get("/:id", async function (req, res, next) {
     try {
         const id = req.params.id;
         const user = await userService.readOneUser(id);
@@ -68,16 +71,11 @@ router.get("/:id", async function (req, res) {
 
         res.status(200).send(responseData);
     } catch (err) {
-        const error = errorHandler(err);
-        const responseData = await insertDataIntoResponseObj(error);
-
-        res.statusCode = error.statusCode;
-        res.send(responseData);
-        res.end();
+        next(err);
     }
 });
 
-router.post("/", jsonParser, async function (req, res) {
+router.post("/", async function (req, res, next) {
     try {
         if (isEmpty(req.body)) {
             throw new CustomError("EMPTY_NEW_USER_DATA");
@@ -92,16 +90,11 @@ router.post("/", jsonParser, async function (req, res) {
 
         res.status(200).send(responseData);
     } catch (err) {
-        const error = errorHandler(err);
-        const responseData = await insertDataIntoResponseObj(error);
-
-        res.statusCode = error.statusCode;
-        res.send(responseData);
-        res.end();
+        next(err);
     }
 });
 
-router.put("/:id", jsonParser, async function (req, res) {
+router.put("/:id", async function (req, res, next) {
     try {
         if (isEmpty(req.body)) {
             throw new CustomError("EMPTY_USER_DATA_FOR_UPDATE");
@@ -116,16 +109,11 @@ router.put("/:id", jsonParser, async function (req, res) {
 
         res.status(200).send(responseData);
     } catch (err) {
-        const error = errorHandler(err);
-        const responseData = await insertDataIntoResponseObj(error);
-
-        res.statusCode = error.statusCode;
-        res.send(responseData);
-        res.end();
+        next(err);
     }
 });
 
-router.delete("/:id", async function (req, res) {
+router.delete("/:id", async function (req, res, next) {
     try {
         const id = req.params.id;
 
@@ -137,13 +125,17 @@ router.delete("/:id", async function (req, res) {
 
         res.send(responseData);
     } catch (err) {
-        const error = errorHandler(err);
-        const responseData = await insertDataIntoResponseObj(error);
-
-        res.statusCode = error.statusCode;
-        res.send(responseData);
-        res.end();
+        next(err);
     }
+});
+
+router.use(async function (err, req, res, next) {
+    const error = errorHandler(err);
+    const responseData = await insertDataIntoResponseObj(error);
+
+    res.statusCode = error.statusCode;
+    res.send(responseData);
+    res.end();
 });
 
 module.exports = router;

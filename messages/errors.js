@@ -11,6 +11,11 @@ const customErrors = {
         code: 400,
         message: "User data for updating is empty",
     },
+
+    EMAIL_OR_PHONE_ALREADY_IN_USE: {
+        code: 400,
+        message: "The user's email or phone number is already in use!",
+    },
 };
 
 module.exports = { customErrors };

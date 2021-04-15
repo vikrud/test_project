@@ -4,11 +4,14 @@
         "dev": "nodemon index.js"
     },
     "dependencies": {
-        "body-parser": "^1.19.0",
+        "bcrypt": "^5.0.1",
         "dotenv": "^8.2.0",
         "express": "^4.17.1",
         "mongodb": "^3.6.6",
-        "mongoose": "^5.12.3"
+        "mongoose": "^5.12.3",
+        "passport": "^0.4.1",
+        "passport-jwt": "^4.0.0",
+        "passport-local": "^1.0.0"
     },
     "devDependencies": {
         "nodemon": "^2.0.7"
