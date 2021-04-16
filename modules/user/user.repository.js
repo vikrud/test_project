@@ -1,27 +1,62 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const { CustomError } = require("../../errorHandler");
-require("dotenv").config();
 
 const userScheme = new Schema({
-    id: Number,
-    name: String,
-    surname: String,
-    email: String,
-    phone: Number,
+    id: {
+        type: Number,
+        required: true,
+        unique: true,
+    },
+    name: {
+        type: String,
+        required: true,
+    },
+    surname: {
+        type: String,
+        required: true,
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+    },
+    phone: {
+        type: Number,
+        required: true,
+        unique: true,
+    },
+    password: {
+        type: String,
+        required: true,
+    },
 });
 const UserModel = mongoose.model("User", userScheme);
 
 const userAggregateForm = {
-    _id: 0,
-    id: 1,
-    name: 1,
-    surname: 1,
-    email: 1,
-    phone: 1,
+    _id: false,
+    id: true,
+    name: true,
+    surname: true,
+    email: true,
+    phone: true,
+    password: true,
 };
 
 class UserRepository {
+    async findUserByEmail(userEmail) {
+        const userDB = await UserModel.findOne(
+            { email: userEmail },
+            userAggregateForm
+        );
+
+        if (!userDB) {
+            throw new CustomError("EMAIL_IS_INCORRECT");
+        }
+
+        return userDB;
+    }
+
     async readAllUsers() {
         const usersArr = await UserModel.find({}, userAggregateForm);
 
@@ -29,7 +64,7 @@ class UserRepository {
     }
 
     async findMongoIdByUserId(userId) {
-        const user = await UserModel.findOne({ id: userId }, { _id: 1 });
+        const user = await UserModel.findOne({ id: userId });
 
         if (!user) {
             throw new CustomError("CANT_FIND_USER_BY_ID");

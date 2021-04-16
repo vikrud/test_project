@@ -1,19 +1,26 @@
+require("dotenv").config();
 const express = require("express");
 const router = express.Router(); // - /v1/user/
-const jsonParser = express.json();
 const { userService } = require("./user.service");
 const { isEmpty, isArrayWithData } = require("../../utils.js");
 const { errorHandler, CustomError } = require("../../errorHandler");
 const { MessageToUser } = require("../../userMessage");
+const { authenticateLogin } = require("./auth.local.middleware");
+const { authenticateJWT } = require(".//auth.jwt.middleware");
 
-function extractUserDataFromRequest(request) {
-    let user = {
-        id: null,
-        name: request.body.name,
-        surname: request.body.surname,
-        email: request.body.email,
-        phone: request.body.phone,
-    };
+router.use(express.json());
+router.use(express.urlencoded({ extended: true }));
+
+async function extractUserDataFromRequest(request) {
+    const params = ["name", "surname", "email", "phone", "password"];
+
+    let user = { id: null };
+
+    params.forEach(function (item) {
+        if (request.body[item]) {
+            user[item] = request.body[item];
+        }
+    });
 
     if (request.params.id) {
         user.id = request.params.id;
@@ -26,7 +33,7 @@ function insertDataIntoResponseObj(data) {
     let responseObj = {
         success: false,
     };
-    console.log(data);
+
     if (data.type == "error") {
         responseObj.success = false;
         responseObj.error = data.message;
@@ -36,12 +43,26 @@ function insertDataIntoResponseObj(data) {
     } else if (data instanceof MessageToUser) {
         responseObj.success = true;
         responseObj.message = data.message;
+    } else if (!isEmpty(data) && data.token) {
+        responseObj.success = true;
+        responseObj.data = [data];
     }
 
     return responseObj;
 }
 
-router.get("/", async function (req, res) {
+router.post("/login", authenticateLogin(), async function (req, res, next) {
+    try {
+        const userJWT = req.token;
+        const responseData = await insertDataIntoResponseObj(userJWT);
+
+        res.status(200).send(responseData);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get("/", authenticateJWT(), async function (req, res, next) {
     try {
         const users = await userService.readAllUsers();
 
@@ -49,17 +70,11 @@ router.get("/", async function (req, res) {
 
         res.status(200).send(responseData);
     } catch (err) {
-        const error = errorHandler(err);
-
-        const responseData = await insertDataIntoResponseObj(error);
-
-        res.statusCode = error.statusCode;
-        res.send(responseData);
-        res.end();
+        next(err);
     }
 });
 
-router.get("/:id", async function (req, res) {
+router.get("/:id", authenticateJWT(), async function (req, res, next) {
     try {
         const id = req.params.id;
         const user = await userService.readOneUser(id);
@@ -68,16 +83,11 @@ router.get("/:id", async function (req, res) {
 
         res.status(200).send(responseData);
     } catch (err) {
-        const error = errorHandler(err);
-        const responseData = await insertDataIntoResponseObj(error);
-
-        res.statusCode = error.statusCode;
-        res.send(responseData);
-        res.end();
+        next(err);
     }
 });
 
-router.post("/", jsonParser, async function (req, res) {
+router.post("/", async function (req, res, next) {
     try {
         if (isEmpty(req.body)) {
             throw new CustomError("EMPTY_NEW_USER_DATA");
@@ -92,16 +102,11 @@ router.post("/", jsonParser, async function (req, res) {
 
         res.status(200).send(responseData);
     } catch (err) {
-        const error = errorHandler(err);
-        const responseData = await insertDataIntoResponseObj(error);
-
-        res.statusCode = error.statusCode;
-        res.send(responseData);
-        res.end();
+        next(err);
     }
 });
 
-router.put("/:id", jsonParser, async function (req, res) {
+router.put("/:id", authenticateJWT(), async function (req, res, next) {
     try {
         if (isEmpty(req.body)) {
             throw new CustomError("EMPTY_USER_DATA_FOR_UPDATE");
@@ -116,16 +121,11 @@ router.put("/:id", jsonParser, async function (req, res) {
 
         res.status(200).send(responseData);
     } catch (err) {
-        const error = errorHandler(err);
-        const responseData = await insertDataIntoResponseObj(error);
-
-        res.statusCode = error.statusCode;
-        res.send(responseData);
-        res.end();
+        next(err);
     }
 });
 
-router.delete("/:id", async function (req, res) {
+router.delete("/:id", authenticateJWT(), async function (req, res, next) {
     try {
         const id = req.params.id;
 
@@ -137,13 +137,17 @@ router.delete("/:id", async function (req, res) {
 
         res.send(responseData);
     } catch (err) {
-        const error = errorHandler(err);
-        const responseData = await insertDataIntoResponseObj(error);
-
-        res.statusCode = error.statusCode;
-        res.send(responseData);
-        res.end();
+        next(err);
     }
+});
+
+router.use(async function (err, req, res, next) {
+    const error = errorHandler(err);
+    const responseData = await insertDataIntoResponseObj(error);
+
+    res.statusCode = error.statusCode;
+    res.send(responseData);
+    res.end();
 });
 
 module.exports = router;
