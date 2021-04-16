@@ -11,10 +11,25 @@ const customErrors = {
         code: 400,
         message: "User data for updating is empty",
     },
-
+    EMPTY_EMAIL_PASS_DATA: {
+        code: 400,
+        message: "User data with email and password is empty",
+    },
     EMAIL_OR_PHONE_ALREADY_IN_USE: {
         code: 400,
         message: "The user's email or phone number is already in use!",
+    },
+    EMAIL_IS_INCORRECT: {
+        code: 401,
+        message: "The entered email is incorrect",
+    },
+    PASSWORD_IS_INCORRECT: {
+        code: 401,
+        message: "The entered password is incorrect",
+    },
+    UNAUTHORISED: {
+        code: 401,
+        message: "UNAUTHORISED!",
     },
 };
 

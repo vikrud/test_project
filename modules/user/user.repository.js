@@ -1,7 +1,9 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const { CustomError } = require("../../errorHandler");
-require("dotenv").config();
+const { encodeJWT } = require("./jwt.config");
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
 
 const userScheme = new Schema({
     id: {
@@ -35,16 +37,40 @@ const userScheme = new Schema({
 const UserModel = mongoose.model("User", userScheme);
 
 const userAggregateForm = {
-    _id: 0,
-    id: 1,
-    name: 1,
-    surname: 1,
-    email: 1,
-    phone: 1,
-    password: 1,
+    _id: false,
+    id: true,
+    name: true,
+    surname: true,
+    email: true,
+    phone: true,
+    password: true,
 };
 
 class UserRepository {
+    async userLogin(userCred) {
+        const userDB = await UserModel.findOne(
+            { email: userCred.email },
+            userAggregateForm
+        );
+
+        if (!userDB) {
+            throw new CustomError("EMAIL_IS_INCORRECT");
+        }
+
+        const matchLoginPass = await bcrypt.compare(
+            userCred.password,
+            userDB.password
+        );
+
+        if (matchLoginPass) {
+            const userToken = await encodeJWT(userDB);
+
+            return { token: userToken };
+        }
+
+        throw new CustomError("PASSWORD_IS_INCORRECT");
+    }
+
     async readAllUsers() {
         const usersArr = await UserModel.find({}, userAggregateForm);
 
@@ -52,7 +78,7 @@ class UserRepository {
     }
 
     async findMongoIdByUserId(userId) {
-        const user = await UserModel.findOne({ id: userId }, { _id: 1 });
+        const user = await UserModel.findOne({ id: userId });
 
         if (!user) {
             throw new CustomError("CANT_FIND_USER_BY_ID");
@@ -82,6 +108,7 @@ class UserRepository {
     }
 
     async saveNewUser(newUser) {
+        newUser.password = await bcrypt.hash(newUser.password, saltRounds);
         const newMongoUser = new UserModel(newUser);
         await newMongoUser.save();
         const savedUser = await UserModel.findOne(newMongoUser);

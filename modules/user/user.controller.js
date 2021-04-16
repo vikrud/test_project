@@ -4,21 +4,21 @@ const { userService } = require("./user.service");
 const { isEmpty, isArrayWithData } = require("../../utils.js");
 const { errorHandler, CustomError } = require("../../errorHandler");
 const { MessageToUser } = require("../../userMessage");
-const bcrypt = require("bcrypt");
-const saltRounds = 10;
+const { authenticateLogin } = require("./auth.local.middleware");
+const { authenticateJWT } = require(".//auth.jwt.middleware");
+
+router.use(express.json());
+router.use(express.urlencoded({ extended: true }));
 
 async function extractUserDataFromRequest(request) {
-    let user = {
-        id: null,
-        name: request.body.name,
-        surname: request.body.surname,
-        email: request.body.email,
-        phone: request.body.phone,
-        password: null,
-    };
+    const params = ["name", "surname", "email", "phone", "password"];
 
-    await bcrypt.hash(request.body.password, saltRounds).then(function (hash) {
-        user.password = hash;
+    let user = { id: null };
+
+    params.forEach(function (item) {
+        if (request.body[item]) {
+            user[item] = request.body[item];
+        }
     });
 
     if (request.params.id) {
@@ -42,15 +42,26 @@ function insertDataIntoResponseObj(data) {
     } else if (data instanceof MessageToUser) {
         responseObj.success = true;
         responseObj.message = data.message;
+    } else if (!isEmpty(data) && data.token) {
+        responseObj.success = true;
+        responseObj.data = [data];
     }
 
     return responseObj;
 }
 
-router.use(express.json());
-router.use(express.urlencoded({ extended: true }));
+router.post("/login", authenticateLogin(), async function (req, res, next) {
+    try {
+        const userJWT = req.token;
+        const responseData = await insertDataIntoResponseObj(userJWT);
 
-router.get("/", async function (req, res, next) {
+        res.status(200).send(responseData);
+    } catch (err) {
+        next(err);
+    }
+});
+
+router.get("/", authenticateJWT(), async function (req, res, next) {
     try {
         const users = await userService.readAllUsers();
 
@@ -62,7 +73,7 @@ router.get("/", async function (req, res, next) {
     }
 });
 
-router.get("/:id", async function (req, res, next) {
+router.get("/:id", authenticateJWT(), async function (req, res, next) {
     try {
         const id = req.params.id;
         const user = await userService.readOneUser(id);
@@ -75,7 +86,7 @@ router.get("/:id", async function (req, res, next) {
     }
 });
 
-router.post("/", async function (req, res, next) {
+router.post("/", authenticateJWT(), async function (req, res, next) {
     try {
         if (isEmpty(req.body)) {
             throw new CustomError("EMPTY_NEW_USER_DATA");
@@ -94,7 +105,7 @@ router.post("/", async function (req, res, next) {
     }
 });
 
-router.put("/:id", async function (req, res, next) {
+router.put("/:id", authenticateJWT(), async function (req, res, next) {
     try {
         if (isEmpty(req.body)) {
             throw new CustomError("EMPTY_USER_DATA_FOR_UPDATE");
@@ -113,7 +124,7 @@ router.put("/:id", async function (req, res, next) {
     }
 });
 
-router.delete("/:id", async function (req, res, next) {
+router.delete("/:id", authenticateJWT(), async function (req, res, next) {
     try {
         const id = req.params.id;
 

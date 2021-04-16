@@ -1,6 +1,11 @@
 const { userRepository } = require("./user.repository");
 
 class UserService {
+    async userLogin(usersCred) {
+        const result = await userRepository.userLogin(usersCred);
+        return result;
+    }
+
     async readAllUsers() {
         const result = await userRepository.readAllUsers();
         return result;
