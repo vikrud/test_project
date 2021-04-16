@@ -1,6 +1,7 @@
 const { userRepository } = require("./user.repository");
 const { encodeJWT } = require("./jwt.config");
 const bcrypt = require("bcrypt");
+const saltRounds = 10;
 
 class UserService {
     async userLogin(email, password) {
@@ -29,6 +30,10 @@ class UserService {
     async createUser(newUser) {
         const maxUsersId = await userRepository.findMaxUserId();
         newUser.id = maxUsersId + 1;
+
+        const passwordHash = await bcrypt.hash(newUser.password, saltRounds);
+        newUser.password = passwordHash;
+
         await userRepository.saveNewUser(newUser);
     }
 

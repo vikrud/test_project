@@ -1,9 +1,6 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const { CustomError } = require("../../errorHandler");
-const { encodeJWT } = require("./jwt.config");
-const bcrypt = require("bcrypt");
-const saltRounds = 10;
 
 const userScheme = new Schema({
     id: {
@@ -97,7 +94,6 @@ class UserRepository {
     }
 
     async saveNewUser(newUser) {
-        newUser.password = await bcrypt.hash(newUser.password, saltRounds);
         const newMongoUser = new UserModel(newUser);
         await newMongoUser.save();
         const savedUser = await UserModel.findOne(newMongoUser);
