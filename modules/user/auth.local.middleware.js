@@ -11,9 +11,8 @@ const localStrategy = new LocalStrategy(
     },
     async function (email, password, done) {
         try {
-            const usersCred = { email: email, password: password };
+            const userToken = await userService.userLogin(email, password);
 
-            const userToken = await userService.userLogin(usersCred);
             return done(null, userToken);
         } catch (err) {
             done(err);

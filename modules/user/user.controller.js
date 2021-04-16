@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const router = express.Router(); // - /v1/user/
 const { userService } = require("./user.service");
@@ -86,7 +87,7 @@ router.get("/:id", authenticateJWT(), async function (req, res, next) {
     }
 });
 
-router.post("/", authenticateJWT(), async function (req, res, next) {
+router.post("/", async function (req, res, next) {
     try {
         if (isEmpty(req.body)) {
             throw new CustomError("EMPTY_NEW_USER_DATA");

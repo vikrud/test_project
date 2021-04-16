@@ -1,5 +1,4 @@
 const jwt = require("jsonwebtoken");
-require("dotenv").config();
 
 async function encodeJWT(userDB) {
     let payload = {

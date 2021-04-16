@@ -1,9 +1,20 @@
 const { userRepository } = require("./user.repository");
+const { encodeJWT } = require("./jwt.config");
+const bcrypt = require("bcrypt");
 
 class UserService {
-    async userLogin(usersCred) {
-        const result = await userRepository.userLogin(usersCred);
-        return result;
+    async userLogin(email, password) {
+        const userDB = await userRepository.findUserByEmail(email);
+
+        const matchLoginPass = await bcrypt.compare(password, userDB.password);
+
+        if (!matchLoginPass) {
+            throw new CustomError("PASSWORD_IS_INCORRECT");
+        }
+
+        const userToken = await encodeJWT(userDB);
+
+        return { token: userToken };
     }
 
     async readAllUsers() {

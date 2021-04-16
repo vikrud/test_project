@@ -47,9 +47,9 @@ const userAggregateForm = {
 };
 
 class UserRepository {
-    async userLogin(userCred) {
+    async findUserByEmail(userEmail) {
         const userDB = await UserModel.findOne(
-            { email: userCred.email },
+            { email: userEmail },
             userAggregateForm
         );
 
@@ -57,18 +57,7 @@ class UserRepository {
             throw new CustomError("EMAIL_IS_INCORRECT");
         }
 
-        const matchLoginPass = await bcrypt.compare(
-            userCred.password,
-            userDB.password
-        );
-
-        if (matchLoginPass) {
-            const userToken = await encodeJWT(userDB);
-
-            return { token: userToken };
-        }
-
-        throw new CustomError("PASSWORD_IS_INCORRECT");
+        return userDB;
     }
 
     async readAllUsers() {
