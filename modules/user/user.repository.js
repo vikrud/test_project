@@ -57,7 +57,7 @@ class UserRepository {
         return userDB;
     }
 
-    async readAllUsers(searchParams, sortParams, limit, skip) {
+    async readAllUsers(searchParams = {}, sortParams = {}, limit, skip) {
         const searchParamsMongo = {};
         Object.entries(searchParams).map(function ([key, value]) {
             searchParamsMongo[key] = new RegExp(value, "gi");
@@ -78,10 +78,6 @@ class UserRepository {
             .limit(limit)
             .skip(skip)
             .sort(sortParamsMongo);
-
-        if (!usersArr.length) {
-            throw new CustomError("CANT_FIND_USER_BY_CRITERIA");
-        }
 
         return usersArr;
     }
@@ -109,7 +105,7 @@ class UserRepository {
     }
 
     async findMaxUserId() {
-        const usersArr = await this.readAllUsers({}, {});
+        const usersArr = await this.readAllUsers();
         const usersIdArr = usersArr.map((usersArr) => usersArr.id);
         const maxId = Math.max(...usersIdArr);
 

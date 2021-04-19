@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const router = express.Router(); // - /v1/user/
 const { userService } = require("./user.service");
-const { isEmpty, isArrayWithData } = require("../../utils.js");
+const { isEmpty } = require("../../utils.js");
 const { errorHandler, CustomError } = require("../../errorHandler");
 const { MessageToUser } = require("../../userMessage");
 const { authenticateLogin } = require("./auth.local.middleware");
@@ -10,31 +10,6 @@ const { authenticateJWT } = require(".//auth.jwt.middleware");
 
 router.use(express.json());
 router.use(express.urlencoded({ extended: true }));
-
-async function extractQueryParamsFromRequest(request) {
-    const query = request.query;
-
-    const searchParams = {};
-    if (query.emailSearch) {
-        searchParams.email = query.emailSearch;
-    }
-    if (query.userName) {
-        let arr = query.userName.split(" ");
-        searchParams.name = arr.shift();
-        searchParams.surname = arr.pop();
-    }
-
-    const sortParams = {};
-    if (query.sortBy) {
-        sortParams.sortBy = query.sortBy;
-        sortParams.orderBy = query.orderBy === "desc" ? "desc" : "asc";
-    }
-
-    const limit = parseInt(query.limit) || 0;
-    const skip = parseInt(query.skip) || 0;
-
-    return { searchParams, sortParams, limit, skip };
-}
 
 async function extractUserDataFromRequest(request) {
     const params = ["name", "surname", "email", "phone", "password"];
@@ -62,7 +37,7 @@ function insertDataIntoResponseObj(data) {
     if (data.type == "error") {
         responseObj.success = false;
         responseObj.error = data.message;
-    } else if (isArrayWithData(data)) {
+    } else if (Array.isArray(data)) {
         responseObj.success = true;
         responseObj.data = data;
     } else if (data instanceof MessageToUser) {
@@ -89,12 +64,26 @@ router.post("/login", authenticateLogin(), async function (req, res, next) {
 
 router.get("/", authenticateJWT(), async function (req, res, next) {
     try {
-        const {
-            searchParams,
-            sortParams,
-            limit,
-            skip,
-        } = await extractQueryParamsFromRequest(req);
+        const query = req.query;
+
+        const searchParams = {};
+        if (query.emailSearch) {
+            searchParams.email = query.emailSearch;
+        }
+        if (query.userName) {
+            let arr = query.userName.split(" ");
+            searchParams.name = arr.shift();
+            searchParams.surname = arr.pop();
+        }
+
+        const sortParams = {};
+        if (query.sortBy) {
+            sortParams.sortBy = query.sortBy;
+            sortParams.orderBy = query.orderBy === "desc" ? "desc" : "asc";
+        }
+
+        const limit = parseInt(query.limit) || 0;
+        const skip = parseInt(query.skip) || 0;
 
         const users = await userService.readAllUsers(
             searchParams,
