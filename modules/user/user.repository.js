@@ -57,8 +57,27 @@ class UserRepository {
         return userDB;
     }
 
-    async readAllUsers() {
-        const usersArr = await UserModel.find({}, userAggregateForm);
+    async readAllUsers(searchParams = {}, sortParams = {}, limit, skip) {
+        const searchParamsMongo = {};
+        Object.entries(searchParams).map(function ([key, value]) {
+            searchParamsMongo[key] = new RegExp(value, "gi");
+        });
+
+        const sortParamsMongo = {};
+        if (sortParams.sortBy && sortParams.orderBy) {
+            sortParamsMongo[sortParams.sortBy] =
+                sortParams.orderBy === "desc" ? -1 : 1;
+        } else {
+            sortParamsMongo.id = 1;
+        }
+
+        const usersArr = await UserModel.find(
+            searchParamsMongo,
+            userAggregateForm
+        )
+            .limit(limit)
+            .skip(skip)
+            .sort(sortParamsMongo);
 
         return usersArr;
     }
