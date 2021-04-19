@@ -18,8 +18,13 @@ class UserService {
         return { token: userToken };
     }
 
-    async readAllUsers() {
-        const result = await userRepository.readAllUsers();
+    async readAllUsers(searchParams, sortParams, limit, skip) {
+        const result = await userRepository.readAllUsers(
+            searchParams,
+            sortParams,
+            limit,
+            skip
+        );
         return result;
     }
     async readOneUser(id) {

@@ -31,6 +31,10 @@ const customErrors = {
         code: 401,
         message: "UNAUTHORISED!",
     },
+    CANT_FIND_USER_BY_CRITERIA: {
+        code: 404,
+        message: "Can't find user with such criteria",
+    },
 };
 
 module.exports = { customErrors };

@@ -11,6 +11,31 @@ const { authenticateJWT } = require(".//auth.jwt.middleware");
 router.use(express.json());
 router.use(express.urlencoded({ extended: true }));
 
+async function extractQueryParamsFromRequest(request) {
+    const query = request.query;
+
+    const searchParams = {};
+    if (query.emailSearch) {
+        searchParams.email = query.emailSearch;
+    }
+    if (query.userName) {
+        let arr = query.userName.split(" ");
+        searchParams.name = arr.shift();
+        searchParams.surname = arr.pop();
+    }
+
+    const sortParams = {};
+    if (query.sortBy) {
+        sortParams.sortBy = query.sortBy;
+        sortParams.orderBy = query.orderBy === "desc" ? "desc" : "asc";
+    }
+
+    const limit = parseInt(query.limit) || 0;
+    const skip = parseInt(query.skip) || 0;
+
+    return { searchParams, sortParams, limit, skip };
+}
+
 async function extractUserDataFromRequest(request) {
     const params = ["name", "surname", "email", "phone", "password"];
 
@@ -64,7 +89,19 @@ router.post("/login", authenticateLogin(), async function (req, res, next) {
 
 router.get("/", authenticateJWT(), async function (req, res, next) {
     try {
-        const users = await userService.readAllUsers();
+        const {
+            searchParams,
+            sortParams,
+            limit,
+            skip,
+        } = await extractQueryParamsFromRequest(req);
+
+        const users = await userService.readAllUsers(
+            searchParams,
+            sortParams,
+            limit,
+            skip
+        );
 
         const responseData = await insertDataIntoResponseObj(users);
 
