@@ -19,7 +19,7 @@ function errorHandler(err) {
     if (err instanceof CustomError) {
         handledError.statusCode = err.statusCode;
         handledError.message = err.message;
-    } else if (err.name == "MongoError" && err.code == 11000) {
+    } else if (err.code == "ER_DUP_ENTRY") {
         handledError.statusCode =
             customErrors.EMAIL_OR_PHONE_ALREADY_IN_USE.code;
         handledError.message =

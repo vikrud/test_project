@@ -1,54 +1,24 @@
-const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
+const mysql = require("mysql2");
 const { CustomError } = require("../../errorHandler");
 
-const userScheme = new Schema({
-    id: {
-        type: Number,
-        required: true,
-        unique: true,
-    },
-    name: {
-        type: String,
-        required: true,
-    },
-    surname: {
-        type: String,
-        required: true,
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-    },
-    phone: {
-        type: Number,
-        required: true,
-        unique: true,
-    },
-    password: {
-        type: String,
-        required: true,
-    },
-});
-const UserModel = mongoose.model("User", userScheme);
-
-const userAggregateForm = {
-    _id: false,
-    id: true,
-    name: true,
-    surname: true,
-    email: true,
-    phone: true,
-    password: true,
+const mysql_config = {
+    host: process.env.MYSQL_HOST,
+    port: process.env.MYSQL_PORT,
+    database: process.env.MYSQL_DB,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASS,
 };
+
+const pool = mysql.createPool(mysql_config);
+const promisePool = pool.promise();
 
 class UserRepository {
     async findUserByEmail(userEmail) {
-        const userDB = await UserModel.findOne(
-            { email: userEmail },
-            userAggregateForm
-        );
+        const query =
+            "SELECT id, name, surname, email, phone, password FROM users WHERE email=?";
+        const [rows] = await promisePool.query(query, userEmail);
+
+        const userDB = rows[0];
 
         if (!userDB) {
             throw new CustomError("EMAIL_IS_INCORRECT");
@@ -58,91 +28,77 @@ class UserRepository {
     }
 
     async readAllUsers(searchParams = {}, sortParams = {}, limit, skip) {
-        const searchParamsMongo = {};
-        Object.entries(searchParams).map(function ([key, value]) {
-            searchParamsMongo[key] = new RegExp(value, "gi");
-        });
+        const email = searchParams.email ? "%" + searchParams.email + "%" : "%";
+        const name = searchParams.name ? "%" + searchParams.name + "%" : "%";
+        const surname = searchParams.surname
+            ? "%" + searchParams.surname + "%"
+            : "%";
+        const sortBy = sortParams.sortBy || "id";
+        const orderBy = sortParams.orderBy == "desc" ? "DESC" : "ASC";
+        const limitMySql = limit || 1e11;
 
-        const sortParamsMongo = {};
-        if (sortParams.sortBy && sortParams.orderBy) {
-            sortParamsMongo[sortParams.sortBy] =
-                sortParams.orderBy === "desc" ? -1 : 1;
-        } else {
-            sortParamsMongo.id = 1;
-        }
+        const query = `SELECT id, name, surname, email, phone, password
+                        FROM users
+                        WHERE email LIKE ? AND
+                            name LIKE ? AND
+                            surname LIKE ?
+                        ORDER BY ${sortBy} ${orderBy}
+                        LIMIT ?, ?`;
+        const [rows] = await promisePool.query(query, [
+            email,
+            name,
+            surname,
+            skip,
+            limitMySql,
+        ]);
 
-        const usersArr = await UserModel.find(
-            searchParamsMongo,
-            userAggregateForm
-        )
-            .limit(limit)
-            .skip(skip)
-            .sort(sortParamsMongo);
-
-        return usersArr;
-    }
-
-    async findMongoIdByUserId(userId) {
-        const user = await UserModel.findOne({ id: userId });
-
-        if (!user) {
-            throw new CustomError("CANT_FIND_USER_BY_ID");
-        }
-
-        const mongoId = user._id;
-
-        return mongoId;
+        return rows;
     }
 
     async readUserById(userId) {
-        const user = await UserModel.findOne({ id: userId }, userAggregateForm);
+        const query =
+            "SELECT id, name, surname, email, phone, password FROM users WHERE id=?";
+        const [rows] = await promisePool.query(query, userId);
+        const userDB = rows[0];
 
-        if (!user) {
+        if (!userDB) {
             throw new CustomError("CANT_FIND_USER_BY_ID");
         }
 
-        return [user];
+        return [userDB];
     }
 
     async findMaxUserId() {
-        const usersArr = await this.readAllUsers();
-        const usersIdArr = usersArr.map((usersArr) => usersArr.id);
-        const maxId = Math.max(...usersIdArr);
+        const query = "SELECT MAX(id) AS MAX_ID FROM users";
+        const [rows] = await promisePool.query(query);
+        const maxId = rows[0].MAX_ID;
 
         return maxId;
     }
 
     async saveNewUser(newUser) {
-        const newMongoUser = new UserModel(newUser);
-        await newMongoUser.save();
-        const savedUser = await UserModel.findOne(newMongoUser);
-
-        if (!savedUser) {
-            throw new Error(500);
-        }
+        const query = "INSERT INTO users SET ?";
+        await promisePool.query(query, newUser);
     }
 
     async updateUser(updatedUserData) {
-        const mongoId = await this.findMongoIdByUserId(updatedUserData.id);
-        const updatedUser = await UserModel.findByIdAndUpdate(
-            mongoId,
+        const query = "UPDATE users SET ? WHERE id=?";
+        const [rows] = await promisePool.query(query, [
             updatedUserData,
-            { new: true, select: userAggregateForm }
-        );
+            updatedUserData.id,
+        ]);
 
-        if (!updatedUser) {
-            throw new Error(500);
+        if (!rows.affectedRows) {
+            throw new CustomError("CANT_FIND_USER_BY_ID");
         }
     }
 
     async deleteUser(id) {
-        const mongoId = await this.findMongoIdByUserId(id);
-        const deletedUser = await UserModel.findByIdAndDelete(mongoId, {
-            select: userAggregateForm,
-        });
+        const query = "DELETE FROM users WHERE id=?";
+        const [rows] = await promisePool.query(query, id);
 
-        if (!deletedUser) {
-            throw new Error(500);
+        if (!rows.affectedRows) {
+            throw new CustomError("CANT_FIND_USER_BY_ID");
         }
     }
 }
