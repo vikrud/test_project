@@ -1,5 +1,6 @@
 const { userRepository } = require("./user.repository");
 const { encodeJWT } = require("./jwt.config");
+const { CustomError } = require("../../errorHandler");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
 
