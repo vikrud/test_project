@@ -28,10 +28,10 @@ class UserRepository {
     }
 
     async readAllUsers(searchParams = {}, sortParams = {}, limit, skip) {
-        const email = searchParams.email ? "%" + searchParams.email + "%" : "%";
-        const name = searchParams.name ? "%" + searchParams.name + "%" : "%";
+        const email = searchParams.email ? `%${searchParams.email}%` : "%";
+        const name = searchParams.name ? `%${searchParams.name}%` : "%";
         const surname = searchParams.surname
-            ? "%" + searchParams.surname + "%"
+            ? `%${searchParams.surname}%`
             : "%";
         const sortBy = sortParams.sortBy || "id";
         const orderBy = sortParams.orderBy == "desc" ? "DESC" : "ASC";
