@@ -4,12 +4,12 @@ import {
   ExecutionContext,
   CallHandler,
 } from '@nestjs/common';
-import { customMessage } from 'messages/messages';
+import { CustomMessage } from 'messages/messages';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 export interface Response<T> {
-  success: Boolean;
+  success: boolean;
   data?: T;
   message?: string;
 }
@@ -22,8 +22,8 @@ export class TransformInterceptor<T>
     next: CallHandler,
   ): Observable<Response<T>> {
     return next.handle().pipe(
-      map(function (resData) {
-        if (resData instanceof customMessage) {
+      map((resData) => {
+        if (resData instanceof CustomMessage) {
           return { success: true, message: resData.message };
         }
 

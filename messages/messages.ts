@@ -1,4 +1,4 @@
-export class customMessage {
+export class CustomMessage {
   message: string;
   constructor(message: string) {
     this.message = message;

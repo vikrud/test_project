@@ -6,7 +6,7 @@ import {
   HttpStatus,
   UnauthorizedException,
 } from '@nestjs/common';
-import { customError } from 'messages/errors';
+import { CustomError } from 'messages/errors';
 import { customErrors } from 'messages/errors';
 import { QueryFailedError } from 'typeorm';
 
@@ -15,19 +15,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
-    const request = ctx.getRequest();
 
     let status =
       exception instanceof HttpException
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    let jsonResponce = {
+    const jsonResponce = {
       success: false,
       error: null,
     };
 
-    if (exception instanceof customError) {
+    if (exception instanceof CustomError) {
       jsonResponce.error = exception.message;
     } else if (exception instanceof UnauthorizedException) {
       jsonResponce.error = customErrors.UNAUTHORISED.message;

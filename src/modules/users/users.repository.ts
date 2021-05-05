@@ -1,8 +1,12 @@
-import { customError } from 'messages/errors';
+import { CustomError } from 'messages/errors';
 import { customErrors } from 'messages/errors';
 import { EntityRepository, Repository } from 'typeorm';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import {
+  ISearchParams,
+  ISortParams,
+} from './interfaces/user.search.sort.interface';
+import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
+
 import { User } from './entities/user.entity';
 
 @EntityRepository(User)
@@ -12,7 +16,7 @@ export class UsersRepository extends Repository<User> {
     const userDB = data[0];
 
     if (!userDB) {
-      throw new customError(
+      throw new CustomError(
         customErrors.EMAIL_IS_INCORRECT.message,
         customErrors.EMAIL_IS_INCORRECT.code,
       );
@@ -22,8 +26,8 @@ export class UsersRepository extends Repository<User> {
   }
 
   async readAllUsers(
-    searchParams: any = {},
-    sortParams: any = {},
+    searchParams: ISearchParams,
+    sortParams: ISortParams,
     limit: number,
     skip: number,
   ): Promise<User[]> {
@@ -36,14 +40,14 @@ export class UsersRepository extends Repository<User> {
     const orderByMySql = sortParams.orderBy == 'desc' ? 'DESC' : 'ASC';
     const limitMySql = limit || 1e11;
 
-    const query = `SELECT id, name, surname, email, phone, password
-                        FROM user
-                        WHERE email LIKE "${emailMySql}" AND
-                            name LIKE "${nameMySql}" AND
-                            surname LIKE "${surnameMySql}"
-                        ORDER BY ${sortByMySql} ${orderByMySql}
-                        LIMIT ${skip}, ${limitMySql}`;
-    const users = await this.query(query);
+    const users = await this.createQueryBuilder('user')
+      .where('user.email LIKE :email', { email: emailMySql })
+      .andWhere('user.name LIKE :name', { name: nameMySql })
+      .andWhere('user.surname LIKE :surname', { surname: surnameMySql })
+      .orderBy(sortByMySql, orderByMySql)
+      .skip(skip)
+      .take(limitMySql)
+      .getMany();
 
     return users;
   }
@@ -52,7 +56,7 @@ export class UsersRepository extends Repository<User> {
     const userDB = await this.findOne(userId);
 
     if (!userDB) {
-      throw new customError(
+      throw new CustomError(
         customErrors.CANT_FIND_USER_BY_ID.message,
         customErrors.CANT_FIND_USER_BY_ID.code,
       );
@@ -62,22 +66,27 @@ export class UsersRepository extends Repository<User> {
   }
 
   async findMaxUserId(): Promise<number> {
-    const query = 'SELECT MAX(id) AS MAX_ID FROM user';
-    const rawSQL = await this.query(query);
-    const maxID: number = rawSQL[0].MAX_ID | 0;
+    const rawSQL = await this.createQueryBuilder('user')
+      .select('MAX(user.id)', 'MAX_ID')
+      .printSql()
+      .getRawOne();
+    const maxID: number = rawSQL.MAX_ID | 0;
 
     return maxID;
   }
 
-  async saveNewUser(newUser: CreateUserDto): Promise<any> {
+  async saveNewUser(newUser: CreateUserDto): Promise<void> {
     await this.insert(newUser);
   }
 
   async updateUser(updatedUserData: UpdateUserDto): Promise<void> {
-    let result = await this.update({ id: updatedUserData.id }, updatedUserData);
+    const result = await this.update(
+      { id: updatedUserData.id },
+      updatedUserData,
+    );
 
     if (!result.affected) {
-      throw new customError(
+      throw new CustomError(
         customErrors.CANT_FIND_USER_BY_ID.message,
         customErrors.CANT_FIND_USER_BY_ID.code,
       );
@@ -88,7 +97,7 @@ export class UsersRepository extends Repository<User> {
     const result = await this.delete({ id: idToDelete });
 
     if (!result.affected) {
-      throw new customError(
+      throw new CustomError(
         customErrors.CANT_FIND_USER_BY_ID.message,
         customErrors.CANT_FIND_USER_BY_ID.code,
       );

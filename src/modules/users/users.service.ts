@@ -1,10 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { UsersRepository } from './users.repository';
 import * as bcrypt from 'bcrypt';
-const saltRounds = 10;
+import { saltRounds } from './constants';
+import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
+import {
+  ISearchParams,
+  ISortParams,
+} from './interfaces/user.search.sort.interface';
 
 @Injectable()
 export class UsersService {
@@ -17,8 +20,8 @@ export class UsersService {
   }
 
   async readAllUsers(
-    searchParams: any,
-    sortParams: any,
+    searchParams: ISearchParams,
+    sortParams: ISortParams,
     limit: number,
     skip: number,
   ): Promise<User[]> {
@@ -37,7 +40,7 @@ export class UsersService {
     return user;
   }
 
-  async createUser(newUser: CreateUserDto): Promise<any> {
+  async createUser(newUser: CreateUserDto): Promise<void> {
     const maxUsersId = await this.usersRepository.findMaxUserId();
     newUser.id = maxUsersId + 1;
 
