@@ -12,6 +12,7 @@ import {
   UseGuards,
   ParseIntPipe,
   UseInterceptors,
+  CacheInterceptor,
 } from '@nestjs/common';
 import { AllExceptionsFilter } from 'src/modules/users/exceptions/all-exception-filter';
 import { User } from './entities/user.entity';
@@ -25,7 +26,7 @@ import { CreateUserDto, QueryParamsDto, UpdateUserDto } from './dto/user.dto';
 
 @Controller('v1/user')
 @UseFilters(new AllExceptionsFilter())
-@UseInterceptors(new TransformInterceptor())
+@UseInterceptors(new TransformInterceptor(), CacheInterceptor)
 export class UserController {
   constructor(
     private readonly usersService: UsersService,
