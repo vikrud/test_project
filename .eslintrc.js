@@ -23,5 +23,6 @@ module.exports = {
     'no-return-await': 'warn',
     'default-param-last': 'warn',
     'no-console': 'warn',
+    'linebreak-style': 'windows',
   },
 };
