@@ -11,6 +11,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from '../auth/auth.module';
 import * as redisStore from 'cache-manager-redis-store';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
@@ -24,6 +25,21 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
         ttl: 86400,
       }),
     }),
+    ClientsModule.register([
+      {
+        name: 'SUBSCRIBERS_SERVICE',
+        transport: Transport.RMQ,
+        options: {
+          urls: [
+            `amqp://${process.env.RABBITMQ_HOST}:${process.env.RABBITMQ_PORT}`,
+          ],
+          queue: process.env.RABBITMQ_QUEUE_NAME,
+          queueOptions: {
+            durable: true,
+          },
+        },
+      },
+    ]),
   ],
   providers: [
     UsersService,
