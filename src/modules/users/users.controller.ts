@@ -13,6 +13,7 @@ import {
   ParseIntPipe,
   UseInterceptors,
   CacheInterceptor,
+  Inject,
 } from '@nestjs/common';
 import { AllExceptionsFilter } from 'src/modules/users/exceptions/all-exception-filter';
 import { User } from './entities/user.entity';
@@ -23,6 +24,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TransformInterceptor } from 'src/modules/users/interceptors/transform.interceptor';
 import { CustomMessage, customMessages } from 'messages/messages';
 import { CreateUserDto, QueryParamsDto, UpdateUserDto } from './dto/user.dto';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Controller('v1/user')
 @UseFilters(new AllExceptionsFilter())
@@ -31,6 +33,7 @@ export class UserController {
   constructor(
     private readonly usersService: UsersService,
     private readonly authService: AuthService,
+    @Inject('SUBSCRIBERS_SERVICE') private readonly client: ClientProxy,
   ) {}
 
   @UseGuards(LocalAuthGuard)
@@ -98,6 +101,11 @@ export class UserController {
     updateUserDto.id = id;
 
     await this.usersService.updateUser(updateUserDto);
+
+    this.client.emit(
+      'user_updated',
+      `User with id: ${updateUserDto.id} successfully updated`,
+    );
 
     return new CustomMessage(customMessages.USER_UPDATED_MESSAGE);
   }
