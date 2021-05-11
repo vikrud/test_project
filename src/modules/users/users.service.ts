@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { User } from './entities/user.entity';
 import { UsersRepository } from './users.repository';
 import * as bcrypt from 'bcrypt';
@@ -8,10 +8,14 @@ import {
   ISearchParams,
   ISortParams,
 } from './interfaces/user.search.sort.interface';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly usersRepository: UsersRepository) {}
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    @Inject('SUBSCRIBERS_SERVICE') private readonly client: ClientProxy,
+  ) {}
 
   async userLogin(email: string): Promise<User> {
     const userDB = await this.usersRepository.findUserByEmail(email);
@@ -52,6 +56,11 @@ export class UsersService {
 
   async updateUser(updatedUser: UpdateUserDto): Promise<void> {
     await this.usersRepository.updateUser(updatedUser);
+
+    this.client.emit(
+      'user_updated',
+      `User with id: ${updatedUser.id} successfully updated`,
+    );
   }
 
   async deleteUser(id: number): Promise<void> {
