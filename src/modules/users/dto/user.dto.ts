@@ -10,6 +10,7 @@ export class CreateUserDto {
   readonly email: string;
   readonly phone: number;
   password: string;
+  readonly role_id: number;
 }
 
 export class UpdateUserDto {
@@ -18,7 +19,8 @@ export class UpdateUserDto {
   readonly surname?: string;
   readonly email?: string;
   readonly phone?: number;
-  readonly password?: string;
+  password?: string;
+  readonly role_id: number;
 }
 
 export class QueryParamsDto {
