@@ -31,10 +31,10 @@ export class AdminsService implements IUserService {
     limit: number,
     skip: number,
   ): Promise<User[]> {
-    filterParams.role = RoleEnum.admin;
+    const newFilterParams = { ...filterParams, role: RoleEnum.admin };
 
     const users = await this.usersRepository.readAllUsers(
-      filterParams,
+      newFilterParams,
       sortParams,
       limit,
       skip,

@@ -71,8 +71,8 @@ export class UserController {
     const limit = queryParamsDto.limit || 0;
     const skip = queryParamsDto.skip || 0;
 
-    const impl = await this.usersFactory.getService(req.user.role);
-    return impl.readAllUsers(filterParams, sortParams, limit, skip);
+    const userService = await this.usersFactory.getService(req.user.roleId);
+    return userService.readAllUsers(filterParams, sortParams, limit, skip);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -81,14 +81,14 @@ export class UserController {
     @Param('id', ParseIntPipe) id: number,
     @Request() req,
   ): Promise<User[]> {
-    const impl = await this.usersFactory.getService(req.user.role);
-    return impl.readOneUser(id);
+    const userService = await this.usersFactory.getService(req.user.roleId);
+    return userService.readOneUser(id);
   }
 
   @Post()
   async create(@Body() createUserDto: CreateUserDto): Promise<CustomMessage> {
-    const impl = await this.usersFactory.getService();
-    impl.createUser(createUserDto);
+    const userService = await this.usersFactory.getService();
+    userService.createUser(createUserDto);
 
     return new CustomMessage(customMessages.USER_CREATED_MESSAGE);
   }
@@ -102,8 +102,8 @@ export class UserController {
   ): Promise<CustomMessage> {
     updateUserDto.id = id;
 
-    const impl = await this.usersFactory.getService(req.user.role);
-    await impl.updateUser(updateUserDto);
+    const userService = await this.usersFactory.getService(req.user.roleId);
+    await userService.updateUser(updateUserDto);
 
     return new CustomMessage(customMessages.USER_UPDATED_MESSAGE);
   }
@@ -114,8 +114,8 @@ export class UserController {
     @Param('id', ParseIntPipe) id: number,
     @Request() req,
   ): Promise<CustomMessage> {
-    const impl = await this.usersFactory.getService(req.user.role);
-    await impl.deleteUser(id);
+    const userService = await this.usersFactory.getService(req.user.roleId);
+    await userService.deleteUser(id);
 
     return new CustomMessage(customMessages.USER_DELETED_MESSAGE);
   }

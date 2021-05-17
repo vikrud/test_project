@@ -30,6 +30,6 @@ import { AdminsService } from './admin.service';
   ],
   providers: [CustomersService, AdminsService, UsersFactory],
   controllers: [UserController],
-  exports: [CustomersService],
+  exports: [UsersFactory],
 })
 export class UsersModule {}

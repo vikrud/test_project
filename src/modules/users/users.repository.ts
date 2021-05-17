@@ -20,9 +20,8 @@ export class UsersRepository extends Repository<User> {
         'user.email AS email',
         'user.phone AS phone',
         'user.password AS password',
-        'role.role_id AS role',
+        'user.roleId AS roleId',
       ])
-      .leftJoin('user.role', 'role')
       .where('user.email = :email', { email: userEmail })
       .getRawOne();
 
@@ -50,8 +49,7 @@ export class UsersRepository extends Repository<User> {
     const sortByMySql = sortParams.sortBy || 'id';
     const orderByMySql = sortParams.orderBy == 'desc' ? 'DESC' : 'ASC';
     const limitMySql = limit || 1e11;
-    const roleMySql =
-      filterParams.role === RoleEnum.admin ? '%' : RoleEnum.customer;
+    const roleMySql = filterParams.role;
 
     const users = await this.createQueryBuilder('user')
       .select([
@@ -61,13 +59,17 @@ export class UsersRepository extends Repository<User> {
         'user.email AS email',
         'user.phone AS phone',
         'user.password AS password',
-        'role.role_name AS role_name',
+        'user.roleId AS roleId',
       ])
-      .leftJoin('user.role', 'role')
       .where('user.email LIKE :email', { email: emailMySql })
       .andWhere('user.name LIKE :name', { name: nameMySql })
       .andWhere('user.surname LIKE :surname', { surname: surnameMySql })
-      .andWhere('user.role_id LIKE :role', { role: roleMySql })
+      .andWhere(
+        roleMySql === RoleEnum.admin
+          ? 'user.roleId IS NOT NULL'
+          : 'user.roleId = :role',
+        { role: roleMySql },
+      )
       .orderBy(sortByMySql, orderByMySql)
       .limit(limitMySql)
       .offset(skip)
@@ -85,11 +87,15 @@ export class UsersRepository extends Repository<User> {
         'user.email AS email',
         'user.phone AS phone',
         'user.password AS password',
-        'role.role_name AS role_name',
+        'user.roleId AS roleId',
       ])
-      .leftJoin('user.role', 'role')
       .where('user.id = :id', { id: userId })
-      .andWhere('user.role_id = :role', { role: userRole })
+      .andWhere(
+        userRole === RoleEnum.admin
+          ? 'user.roleId IS NOT NULL'
+          : 'user.roleId = :role',
+        { role: userRole },
+      )
       .getRawOne();
 
     if (!userDB) {

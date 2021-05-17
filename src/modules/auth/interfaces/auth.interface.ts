@@ -10,13 +10,13 @@ export interface IValidateLocalUser {
   surname: string;
   email: string;
   phone: number;
-  role: RoleEnum;
+  roleId: RoleEnum;
 }
 
 export interface IPayload {
   id: number;
   email: string;
-  role: RoleEnum;
+  roleId: RoleEnum;
   iat: number;
   exp: number;
 }
@@ -24,5 +24,5 @@ export interface IPayload {
 export interface IValidateJWTUser {
   id: number;
   email: string;
-  role: RoleEnum;
+  roleId: RoleEnum;
 }

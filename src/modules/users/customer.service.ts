@@ -31,10 +31,10 @@ export class CustomersService implements IUserService {
     limit: number,
     skip: number,
   ): Promise<User[]> {
-    filterParams.role = RoleEnum.customer;
+    const newFilterParams = { ...filterParams, role: RoleEnum.customer };
 
     const users = await this.usersRepository.readAllUsers(
-      filterParams,
+      newFilterParams,
       sortParams,
       limit,
       skip,
