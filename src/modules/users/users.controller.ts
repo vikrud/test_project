@@ -12,25 +12,24 @@ import {
   UseGuards,
   ParseIntPipe,
   UseInterceptors,
-  CacheInterceptor,
 } from '@nestjs/common';
 import { AllExceptionsFilter } from 'src/modules/users/exceptions/all-exception-filter';
 import { User } from './entities/user.entity';
-import { UsersService } from './users.service';
 import { LocalAuthGuard } from '../auth/guards/local-auth.guard';
 import { AuthService } from '../auth/auth.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TransformInterceptor } from 'src/modules/users/interceptors/transform.interceptor';
 import { CustomMessage, customMessages } from 'messages/messages';
 import { CreateUserDto, QueryParamsDto, UpdateUserDto } from './dto/user.dto';
+import { UsersFactory } from './users.factory';
 
 @Controller('v1/user')
 @UseFilters(new AllExceptionsFilter())
-@UseInterceptors(new TransformInterceptor(), CacheInterceptor)
+@UseInterceptors(new TransformInterceptor())
 export class UserController {
   constructor(
-    private readonly usersService: UsersService,
     private readonly authService: AuthService,
+    private readonly usersFactory: UsersFactory,
   ) {}
 
   @UseGuards(LocalAuthGuard)
@@ -41,19 +40,23 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  async getAll(@Query() queryParamsDto: QueryParamsDto): Promise<User[]> {
-    const searchParams = {
+  async getAll(
+    @Query() queryParamsDto: QueryParamsDto,
+    @Request() req,
+  ): Promise<User[]> {
+    const filterParams = {
       email: null,
       name: null,
       surname: null,
+      role: null,
     };
     if (queryParamsDto.emailSearch) {
-      searchParams.email = queryParamsDto.emailSearch;
+      filterParams.email = queryParamsDto.emailSearch;
     }
     if (queryParamsDto.userName) {
       const arr = queryParamsDto.userName.split(' ');
-      searchParams.name = arr.shift();
-      searchParams.surname = arr.pop();
+      filterParams.name = arr.shift();
+      filterParams.surname = arr.pop();
     }
 
     const sortParams = {
@@ -68,23 +71,24 @@ export class UserController {
     const limit = queryParamsDto.limit || 0;
     const skip = queryParamsDto.skip || 0;
 
-    return this.usersService.readAllUsers(
-      searchParams,
-      sortParams,
-      limit,
-      skip,
-    );
+    const userService = await this.usersFactory.getService(req.user.roleId);
+    return userService.readAllUsers(filterParams, sortParams, limit, skip);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  async getOne(@Param('id', ParseIntPipe) id: number): Promise<User[]> {
-    return this.usersService.readOneUser(id);
+  async getOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req,
+  ): Promise<User[]> {
+    const userService = await this.usersFactory.getService(req.user.roleId);
+    return userService.readOneUser(id);
   }
 
   @Post()
   async create(@Body() createUserDto: CreateUserDto): Promise<CustomMessage> {
-    await this.usersService.createUser(createUserDto);
+    const userService = await this.usersFactory.getService();
+    userService.createUser(createUserDto);
 
     return new CustomMessage(customMessages.USER_CREATED_MESSAGE);
   }
@@ -94,18 +98,24 @@ export class UserController {
   async update(
     @Body() updateUserDto: UpdateUserDto,
     @Param('id', ParseIntPipe) id: number,
+    @Request() req,
   ): Promise<CustomMessage> {
     updateUserDto.id = id;
 
-    await this.usersService.updateUser(updateUserDto);
+    const userService = await this.usersFactory.getService(req.user.roleId);
+    await userService.updateUser(updateUserDto);
 
     return new CustomMessage(customMessages.USER_UPDATED_MESSAGE);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  async delete(@Param('id', ParseIntPipe) id: number): Promise<CustomMessage> {
-    await this.usersService.deleteUser(id);
+  async delete(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req,
+  ): Promise<CustomMessage> {
+    const userService = await this.usersFactory.getService(req.user.roleId);
+    await userService.deleteUser(id);
 
     return new CustomMessage(customMessages.USER_DELETED_MESSAGE);
   }

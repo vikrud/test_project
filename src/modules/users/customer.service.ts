@@ -5,13 +5,15 @@ import * as bcrypt from 'bcrypt';
 import { saltRounds } from './constants';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import {
-  ISearchParams,
+  IFilterParams,
   ISortParams,
 } from './interfaces/user.search.sort.interface';
 import { ClientProxy } from '@nestjs/microservices';
+import { RoleEnum } from './enums/role.enum';
+import { IUserService } from './interfaces/user.service.interface';
 
 @Injectable()
-export class UsersService {
+export class CustomersService implements IUserService {
   constructor(
     private readonly usersRepository: UsersRepository,
     @Inject('SUBSCRIBERS_SERVICE') private readonly client: ClientProxy,
@@ -24,13 +26,15 @@ export class UsersService {
   }
 
   async readAllUsers(
-    searchParams: ISearchParams,
+    filterParams: IFilterParams,
     sortParams: ISortParams,
     limit: number,
     skip: number,
   ): Promise<User[]> {
+    const newFilterParams = { ...filterParams, role: RoleEnum.customer };
+
     const users = await this.usersRepository.readAllUsers(
-      searchParams,
+      newFilterParams,
       sortParams,
       limit,
       skip,
@@ -40,7 +44,8 @@ export class UsersService {
   }
 
   async readOneUser(id: number): Promise<User[]> {
-    const user = await this.usersRepository.readUserById(id);
+    const role = RoleEnum.customer;
+    const user = await this.usersRepository.readUserById(id, role);
     return user;
   }
 
@@ -55,6 +60,11 @@ export class UsersService {
   }
 
   async updateUser(updatedUser: UpdateUserDto): Promise<void> {
+    if (updatedUser.password) {
+      const passwordHash = await bcrypt.hash(updatedUser.password, saltRounds);
+      updatedUser.password = passwordHash;
+    }
+
     await this.usersRepository.updateUser(updatedUser);
 
     this.client.emit(
