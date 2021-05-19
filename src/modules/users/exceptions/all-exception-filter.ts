@@ -6,8 +6,7 @@ import {
   HttpStatus,
   UnauthorizedException,
 } from '@nestjs/common';
-import { CustomError } from 'messages/errors';
-import { customErrors } from 'messages/errors';
+import { CustomError, customErrors } from '../../../../messages/errors';
 import { QueryFailedError } from 'typeorm';
 
 @Catch()

@@ -2,7 +2,7 @@ import { Strategy } from 'passport-local';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { AuthService } from '../auth.service';
-import { CustomError, customErrors } from 'messages/errors';
+import { CustomError, customErrors } from '../../../../messages/errors';
 import { IValidateLocalUser } from '../interfaces/auth.interface';
 
 @Injectable()

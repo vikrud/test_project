@@ -13,13 +13,13 @@ import {
   ParseIntPipe,
   UseInterceptors,
 } from '@nestjs/common';
-import { AllExceptionsFilter } from 'src/modules/users/exceptions/all-exception-filter';
+import { AllExceptionsFilter } from './exceptions/all-exception-filter';
 import { User } from './entities/user.entity';
 import { LocalAuthGuard } from '../auth/guards/local-auth.guard';
 import { AuthService } from '../auth/auth.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { TransformInterceptor } from 'src/modules/users/interceptors/transform.interceptor';
-import { CustomMessage, customMessages } from 'messages/messages';
+import { TransformInterceptor } from './interceptors/transform.interceptor';
+import { CustomMessage, customMessages } from '../../../messages/messages';
 import { CreateUserDto, QueryParamsDto, UpdateUserDto } from './dto/user.dto';
 import { UsersFactory } from './users.factory';
 

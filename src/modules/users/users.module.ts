@@ -28,8 +28,8 @@ import { AdminsService } from './admin.service';
       },
     ]),
   ],
-  providers: [CustomersService, AdminsService, UsersFactory],
+  providers: [CustomersService, AdminsService, UsersFactory, UsersRepository],
   controllers: [UserController],
-  exports: [UsersFactory],
+  exports: [UsersFactory, CustomersService, UsersRepository],
 })
 export class UsersModule {}
