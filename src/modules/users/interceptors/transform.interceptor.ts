@@ -4,7 +4,7 @@ import {
   ExecutionContext,
   CallHandler,
 } from '@nestjs/common';
-import { CustomMessage } from 'messages/messages';
+import { CustomMessage } from '../../../../messages/messages';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
