@@ -2,11 +2,12 @@ import { CustomersService } from '../src/modules/users/customer.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersModule } from '../src/modules/users/users.module';
 import { UsersRepository } from '../src/modules/users/users.repository';
+//jest.mock('../src/modules/users/users.repository');
 
 describe('CustomersServise', () => {
   let customersServise: CustomersService;
 
-  interface ICustomer {
+  interface IUserForCustomer {
     name: string;
     surname: string;
     email: string;
@@ -15,7 +16,7 @@ describe('CustomersServise', () => {
     role: 2;
   }
 
-  interface IFilterParamsCustomer {
+  interface IFilterParamsAdmin {
     email: string | null;
     name: string | null;
     surname: string | null;
@@ -29,17 +30,42 @@ describe('CustomersServise', () => {
 
   const MockUsersRepository = {
     readAllUsers: jest.fn(
-      (IFilterParamsCustomer, ISortParams, limit: number, skip: number) => {
-        return Promise.resolve(Array<ICustomer>());
+      (IFilterParamsAdmin, ISortParams, limit: number, skip: number) => {
+        return Promise.resolve(result);
       },
     ),
   };
+
+  const result = [
+    {
+      id: 1,
+      name: 'Tom',
+      surname: 'Petrenko',
+      email: 'petrenko.t@mail.com',
+      phone: '380951234567',
+      password: '$2b$10$QibZHySF5vAOvLNpLtByAea0Zolhk.1dKT5vsP6OIS4i/9Pqijybi',
+      roleId: 2,
+    },
+    {
+      id: 2,
+      name: 'Viktor',
+      surname: 'Rudenko',
+      email: 'rudenko.v@mail.com',
+      phone: '380631234567',
+      password: '$2b$10$clJ.1u7OXHganrBYPaTDIOpUW8Nljzx1.TcDThMoiqo61i9yOiJ6W',
+      roleId: 2,
+    },
+  ];
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [UsersModule],
       providers: [
         CustomersService,
+        // {
+        //   provide: getRepositoryToken(User),
+        //   useValue: MockUsersRepository,
+        // },
         {
           provide: 'SUBSCRIBERS_SERVICE',
           useValue: {},
@@ -53,11 +79,7 @@ describe('CustomersServise', () => {
     customersServise = module.get<CustomersService>(CustomersService);
   });
 
-  it('should be defined', () => {
-    expect(customersServise).toBeDefined();
-  });
-
-  it('should return an array with only all customers', async () => {
+  it('should return an array with all users', async () => {
     const filterParams = {
       email: null,
       name: null,
@@ -71,7 +93,7 @@ describe('CustomersServise', () => {
     const limit = 0;
     const skip = 0;
 
-    const result = Array<ICustomer>();
+    const readAllUsersSpy = jest.spyOn(MockUsersRepository, 'readAllUsers');
 
     expect(
       await customersServise.readAllUsers(
@@ -81,6 +103,13 @@ describe('CustomersServise', () => {
         skip,
       ),
     ).toEqual(result);
+
+    expect(readAllUsersSpy).toHaveBeenCalledWith(
+      filterParams,
+      sortParams,
+      limit,
+      skip,
+    );
   });
 
   it('should be called with the required params', () => {
@@ -96,11 +125,10 @@ describe('CustomersServise', () => {
     };
     const limit = 0;
     const skip = 0;
-    const sreadAllUsersSpy = jest
-      .spyOn(MockUsersRepository, 'readAllUsers')
-      .mockImplementation();
 
-    expect(sreadAllUsersSpy).toBeCalledWith(
+    const readAllUsersSpy = jest.spyOn(MockUsersRepository, 'readAllUsers');
+
+    expect(readAllUsersSpy).toBeCalledWith(
       filterParams,
       sortParams,
       limit,
